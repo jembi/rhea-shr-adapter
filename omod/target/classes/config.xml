@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<module configVersion="1.2">
+
+	<!-- Module Properties -->
+	<id>rheashradapter</id>
+	<name>RHEA SHR Adapter Web Service</name>
+	<version>1.0-SNAPSHOT</version>
+	<package>org.openmrs.module.rheashradapter</package>
+	<author>surangak</author>
+	<description>
+		SHR Adapter Web Service developed by Jembi Health Systems
+	</description>
+	<updateURL>https://modules.openmrs.org/modules/download/rheashradapter/update.rdf</updateURL>
+	<require_version>1.8.3</require_version>
+	<!-- / Module Properties -->
+
+	
+	<!-- Required Modules -->
+	<require_modules>
+																											
+		<require_module version="1.0.28039">
+			org.openmrs.module.webservices.rest
+		</require_module>
+			
+	</require_modules>
+	<!-- / Required Modules -->
+	
+	<!-- Module Activator -->
+	<activator>org.openmrs.module.rheashradapter.RHEASHRAdaptermoduleActivator</activator>
+	
+	
+	<!-- Adds link to admin page -->
+	<extension>
+		<point>org.openmrs.admin.list</point>
+		<class>org.openmrs.module.rheashradapter.extension.html.AdminList</class>
+	</extension>
+	
+	<globalProperty>
+		<property>rheashradapter.sendingFaculty</property>
+		<defaultValue></defaultValue>
+		<description>The sending faculty value which represents the implementation</description>
+	</globalProperty>
+
+	<globalProperty>
+		<property>rheashradapter.hie.username</property>
+		<defaultValue></defaultValue>
+		<description>The username to send reminders to the Interopability layer</description>
+	</globalProperty>
+	
+		<globalProperty>
+		<property>rheashradapter.hie.password</property>
+		<defaultValue></defaultValue>
+		<description>The password to send reminders to the Interopability layer</description>
+	</globalProperty>
+	
+		<globalProperty>
+		<property>rheashradapter.hie.url</property>
+		<defaultValue></defaultValue>
+		<description>The url to send reminders to the Interopability layer</description>
+	</globalProperty>
+	
+	<!-- Maps hibernate file's, if present -->
+	<mappingFiles>
+		PostEncounterLog.hbm.xml
+		GetEncounterLog.hbm.xml
+		MatchingEncounters.hbm.xml		
+	</mappingFiles>
+
+	<!-- Internationalization -->
+	<!-- All message codes should start with rheashradapter. -->
+	<messages>
+		<lang>en</lang>
+		<file>messages.properties</file>
+	</messages>
+	<messages>
+		<lang>fr</lang>
+		<file>messages_fr.properties</file>
+	</messages>
+	<messages>
+		<lang>es</lang>
+		<file>messages_es.properties</file>
+	</messages>
+	<!-- /Internationalization -->
+	
+</module>
+

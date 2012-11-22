@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/!svn/ver/1401/SHRADAP/trunk/RHEA_SHR_Adapter/api/src/main/java/org/openmrs/module/rheashradapter/api
+END
+LogEncounterService.java
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/!svn/ver/1401/SHRADAP/trunk/RHEA_SHR_Adapter/api/src/main/java/org/openmrs/module/rheashradapter/api/LogEncounterService.java
+END
+LogEncounterServiceImpl.java
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/!svn/ver/1401/SHRADAP/trunk/RHEA_SHR_Adapter/api/src/main/java/org/openmrs/module/rheashradapter/api/LogEncounterServiceImpl.java
+END

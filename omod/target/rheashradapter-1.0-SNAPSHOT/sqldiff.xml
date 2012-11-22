@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqldiff PUBLIC "-//OpenMRS//DTD OpenMRS SQL Diff Config 1.0//EN" "http://resources.openmrs.org/doctype/sqldiff-1.0.dtd">
+
+<sqldiff version="1.0">
+	<help>
+		USE:
+			The diffs are ordered by datamodel version number.
+			The script can be run in a top down fashion and is
+			expected to not failor overwrite old data
+		
+		EXPECT:
+			- "use business-database-name;" was called prior to
+			   calling this script
+	</help>
+	
+	<diff>
+		<version>1.0.1</version>
+		<author>Suranga</author>
+		<date>May 26th, 2012</date>
+		<description>
+			Log tables to record POST and GET encounter requests made on the RHEA SHR Adapter module
+		</description>
+		<sql>
+			DROP TABLE IF EXISTS `rheashradapter_post_encounter_log`;
+CREATE TABLE  `rheashradapter_post_encounter_log` (
+  `post_request_id` int NOT NULL AUTO_INCREMENT,
+  `patient_id` varchar(40) default NULL,
+  `hl7_data` mediumtext default NULL,
+  `date_created` varchar(40) default NULL,
+  `valid` smallint(6) NOT NULL DEFAULT '0',
+  `result` varchar(200) default NULL,
+  `error` varchar(255) default NULL,
+  `user_id` int NOT NULL,
+  PRIMARY KEY  (`post_Request_Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+			DROP TABLE IF EXISTS `rheashradapter_get_encounter_log`;
+CREATE TABLE  `rheashradapter_get_encounter_log` (
+  `get_request_id` int NOT NULL AUTO_INCREMENT,
+  `patient_id` varchar(40) default NULL,
+  `encounter_unique_id` varchar(40) default NULL,
+  `date_start` varchar(40) default NULL,
+  `date_end` varchar(40) default NULL,
+  `log_time` varchar(40) default NULL,
+  `result` varchar(200) default NULL,
+  `error` varchar(255) default NULL,
+  `error_details` longtext default NULL,
+  PRIMARY KEY  (`get_request_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+			DROP TABLE IF EXISTS `rheashradapter_matching_encounters`;
+	CREATE TABLE `rheashradapter_matching_encounters` (
+			`matching_encounters_id` int AUTO_INCREMENT PRIMARY KEY,
+			`get_request_id` int default NULL,
+			`encounter_id` int default NULL,
+			KEY `matching_id` (`get_request_id`),
+			CONSTRAINT `matching_id` FOREIGN KEY (`get_request_id`)
+			REFERENCES `rheashradapter_get_encounter_log` (`get_request_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+		</sql>
+	</diff>
+	<diff>
+		<version>1.0.2</version>
+		<author>suranga</author>
+		<date>July 11th, 2012</date>
+		<description>
+			Increase the column size of the `rheashradapter_post_encounter_log.error` column
+		</description>
+		<sql>
+			ALTER TABLE rheashradapter_post_encounter_log MODIFY error MEDIUMTEXT;
+		</sql>
+	</diff>
+		<diff>
+		<version>1.0.3</version>
+		<author>suranga</author>
+		<date>August 1st, 2012</date>
+		<description>
+			Add `enterprise_location_id` column to the `rheashradapter_get_encounter_log` store user request data.
+		</description>
+		<sql>
+			ALTER TABLE rheashradapter_get_encounter_log ADD enterprise_location_id varchar(40) default NULL after encounter_unique_id ;
+		</sql>
+	</diff>
+
+
+</sqldiff>

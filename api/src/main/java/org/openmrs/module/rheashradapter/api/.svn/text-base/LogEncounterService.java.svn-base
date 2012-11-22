@@ -1,0 +1,41 @@
+package org.openmrs.module.rheashradapter.api;
+
+import org.openmrs.Person;
+import org.openmrs.api.OpenmrsService;
+import org.openmrs.module.rheashradapter.model.GetEncounterLog;
+import org.openmrs.module.rheashradapter.model.PostEncounterLog;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * The Interface LogEncounterService.
+ * Service layer interface used for logging requests
+ */
+
+@Transactional
+public interface LogEncounterService extends OpenmrsService {
+	
+	/**
+	 * Save get encounter log.
+	 *
+	 * @param getEncounterLog the get encounter log
+	 */
+	public void saveGetEncounterLog(GetEncounterLog getEncounterLog);
+	
+	/**
+	 * Save post encounter log.
+	 *
+	 * @param postEncounterLog the post encounter log
+	 */
+	public void savePostEncounterLog(PostEncounterLog postEncounterLog);
+	
+	/**
+	 * Gets the person by epid.
+	 *
+	 * @param EPID the epid
+	 * @return the person by epid
+	 */
+	public Person getPersonByEPID(String EPID);
+	
+	
+	public String getPersonAttributesByPerson(Person p, String EPID);
+}

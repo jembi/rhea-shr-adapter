@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd" >
+
+<hibernate-mapping>
+
+	<class name="org.openmrs.module.rheashradapter.model.GetEncounterLog" table="rheashradapter_get_encounter_log">
+
+		<id name="getRequestId" type="int" column="get_request_id" 
+			unsaved-value="0">
+				<generator class="identity" />
+		</id>
+		
+		<property name="patientId" type="java.lang.String" 
+			column="patient_id" not-null="false" length="40" />
+			
+		<property name="encounterUniqueId" type="java.lang.String" 
+			column="encounter_unique_id" not-null="false" length="40" />
+			
+		<property name="enterpriseLocationId" type="java.lang.String" 
+			column="enterprise_location_id" not-null="false" length="40" />
+			
+ 		<property name="dateStart" type="java.util.Date" 
+			column="date_start" not-null="false" />
+		
+		<property name="dateEnd" type="java.util.Date" 
+			column="date_end" not-null="false" />
+			
+		<property name="logTime" type="java.util.Date" 
+			column="log_time" not-null="false" />
+			
+		<property name="result" type="java.lang.String" 
+			column="result" not-null="false" length="40" />
+			
+		<property name="error" type="java.lang.String" length="255"
+			column="error" />
+
+		<property name="errorDetails" type="java.lang.String" length="16777215"
+			column="error_details" />
+			
+		<!-- bi-directional one-to-many association -->
+		<set name="matchingEncounters" lazy="true" inverse="true" cascade="all-delete-orphan" sort="natural">
+			<key column="get_request_id" not-null="true" />
+			<one-to-many class="org.openmrs.module.rheashradapter.model.MatchingEncounters" />
+		</set>
+		
+	</class>
+</hibernate-mapping>
