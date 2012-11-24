@@ -142,8 +142,9 @@ public class LogEncounterDAOImpl implements LogEncounterDAO{
 	
 	@Override
 	public List<PostEncounterLog> getPostEncounterLogs() {
-		Criteria c = sessionFactory.getCurrentSession().createCriteria(PostEncounterLog.class);
-		return c.list();
+		List<PostEncounterLog> logs;
+		logs = sessionFactory.getCurrentSession().createCriteria(PostEncounterLog.class).list();
+		return logs;
 	}
 
 	@Override
