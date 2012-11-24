@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+
+	<changeSet id="1656846212538-331141" author="surangak" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="rheashradapter_get_encounter_log" columnName="log_time"/>
+            <columnExists tableName="rheashradapter_get_encounter_log" columnName="date_start"/>
+            <columnExists tableName="rheashradapter_get_encounter_log" columnName="date_end"/>
+        </preConditions>
+        <comment>Modify column date* columns from VARCHAR to TIMESTAMP</comment>
+        <modifyDataType tableName="rheashradapter_get_encounter_log" columnName="log_time" newDataType="TIMESTAMP"/>
+    </changeSet>
+    
+    <changeSet id="1656846211232-332251" author="surangak" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="rheashradapter_post_encounter_log" columnName="date_created"/>
+        </preConditions>
+        <comment>Modify column date* columns from VARCHAR to TIMESTAMP</comment>
+        <modifyDataType tableName="rheashradapter_post_encounter_log" columnName="date_created" newDataType="TIMESTAMP"/>
+    </changeSet>
+    
+
+</databaseChangeLog>
