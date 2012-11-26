@@ -309,10 +309,14 @@ public class RHEApatientController {
 			}
 
 			try {
+				//request.setAttribute("ORUR01",hl7Msg);
 				
+				System.out.println(hl7Msg);
 				response.getWriter().write(hl7Msg);
 				response.getWriter().flush();
 				response.getWriter().close();
+				
+				
 
 				service.saveGetEncounterLog(getEncounterLog);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -320,7 +324,7 @@ public class RHEApatientController {
 				e.printStackTrace();
 			}
 		}
-		return null;
+		return hl7Msg;
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.POST)
