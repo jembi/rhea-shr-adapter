@@ -5,6 +5,8 @@
 
 <hibernate-configuration>
 	<session-factory>
-		${hbmConfig}
+		<mapping resource="GetEncounterLog.hbm.xml" />
+		<mapping resource="MatchingEncounters.hbm.xml" />
+		<mapping resource="PostEncounterLog.hbm.xml" />
 	</session-factory>
 </hibernate-configuration>
