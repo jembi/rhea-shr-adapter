@@ -15,12 +15,9 @@
 package org.openmrs.module.rheashradapter.web.controller;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,7 +30,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,7 +42,6 @@ import org.jdom.JDOMException;
 import org.jdom.Namespace;
 import org.jdom.input.SAXBuilder;
 import org.openmrs.Encounter;
-import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
@@ -117,7 +112,7 @@ public class RHEApatientController {
 		log.info("Enterprise Patient Id is :" + patientId);
 		log.info("Enterprise Id type is :" + idType);
 		log.info("encounterUniqueId is :" + encounterUniqueId);
-		log.info("dateStart is :" + dateStart);
+		System.out.println("dateStart is :" + dateStart);
 
 		GetEncounterLog getEncounterLog = new GetEncounterLog();
 		getEncounterLog.setLogTime(new Date());
@@ -222,9 +217,10 @@ public class RHEApatientController {
 
 			if (p != null) {
 				// get all the encounters for this patient
-				List<Encounter> encounterList = Context.getEncounterService()
+				List<Encounter> encounterList = Context.getEncounterService()						
 						.getEncounters(p, null, fromDate, toDate, null, null,
 								null, false);
+				
 				// if the enconteruniqueId is not null, we can isolate the given encounter
 
 				if (encounterUniqueId != null) {
@@ -309,22 +305,17 @@ public class RHEApatientController {
 			}
 
 			try {
-				//request.setAttribute("ORUR01",hl7Msg);
-				
-				System.out.println(hl7Msg);
 				response.getWriter().write(hl7Msg);
 				response.getWriter().flush();
 				response.getWriter().close();
-				
-				
-
+								
 				service.saveGetEncounterLog(getEncounterLog);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		return hl7Msg;
+		return r01;
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.POST)
