@@ -1,29 +1,16 @@
 package org.openmrs.module.rheashradapter.web.controller;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.openmrs.Concept;
 import org.openmrs.Encounter;
-import org.openmrs.Location;
-import org.openmrs.Obs;
-import org.openmrs.Person;
-import org.openmrs.PersonAttributeType;
 import org.openmrs.api.context.Context;
 
 import org.openmrs.module.rheashradapter.util.RHEAHL7Constants;
-import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.openmrs.test.Verifies;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -43,6 +30,9 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	@Test
 	@Verifies(value = "should Get Matching Encounters by patient ECID From Database(", method = "getEncounters(...)")
 	public void getEncounters_shouldGetMatchingEncountersByPatientECIDFromDatabase() throws Exception {
+		
+		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
+
 		RHEApatientController controller = new RHEApatientController();
 		
 		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
@@ -57,10 +47,76 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		assertTrue(r01 instanceof ORU_R01);	
 		
 		assertEquals(r01.getMSH().getVersionID().getInternationalizationCode().getIdentifier().getValue(),RHEAHL7Constants.INTERNATIONALIZATION_CODE);
-		assertEquals(r01.getMSH().getSendingApplication().getNamespaceID().getValue(), RHEAHL7Constants.SENDING_APPLICATION);
 		assertEquals(r01.getMSH().getSendingFacility().getNamespaceID().getValue(),RHEAHL7Constants.SENDING_FACILITY);
 		
 		PID pid = r01.getPATIENT_RESULT().getPATIENT().getPID();
+		
+	}
+	
+	@Test
+	@Verifies(value = "should Get Matching Encounters by patient ECID From encounterUniqueId (", method = "getEncounters(...)")
+	public void getEncounters_shouldGetMatchingEncountersByEncounterUniqueId() throws Exception {
+		
+		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
+
+		RHEApatientController controller = new RHEApatientController();
+		
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
+		HttpServletResponse response = new MockHttpServletResponse();
+		String enterpriseId = "1234";
+		String idType = "ECID";
+		String encounterUniqueId = "f13d6fae-baa9-4553-955d-920098bec08f";
+		
+		Object object = controller.getEncounters(enterpriseId, idType, encounterUniqueId, null, null, null, request, response);
+		
+		ORU_R01 r01 = (ORU_R01) object;
+		assertNotNull(r01);
+		assertTrue(r01 instanceof ORU_R01);	
+		
+		assertEquals(r01.getMSH().getVersionID().getInternationalizationCode().getIdentifier().getValue(),RHEAHL7Constants.INTERNATIONALIZATION_CODE);
+		assertEquals(r01.getMSH().getSendingFacility().getNamespaceID().getValue(),RHEAHL7Constants.SENDING_FACILITY);
+		
+		PID pid = r01.getPATIENT_RESULT().getPATIENT().getPID();
+		
+	}
+	
+	@Test
+	@Verifies(value = "should Get Matching Encounters by date created (", method = "getEncounters(...)")
+	public void getEncounters_shouldGetMatchingEncountersByDateCreated() throws Exception {
+		
+		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
+
+		RHEApatientController controller = new RHEApatientController();
+		
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
+		HttpServletResponse response = new MockHttpServletResponse();
+		String enterpriseId = "1234";
+		String idType = "ECID";
+		
+		Object object = controller.getEncounters(enterpriseId, idType, null, null, "01-01-2010", null, request, response);
+		
+		ORU_R01 r01 = (ORU_R01) object;
+		assertNull(r01);
+		
+	}
+	
+	@Test
+	@Verifies(value = "should Get Matching Encounters by date end (", method = "getEncounters(...)")
+	public void getEncounters_shouldGetMatchingEncountersByDateEnd() throws Exception {
+		
+		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
+
+		RHEApatientController controller = new RHEApatientController();
+		
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
+		HttpServletResponse response = new MockHttpServletResponse();
+		String enterpriseId = "1234";
+		String idType = "ECID";
+		
+		Object object = controller.getEncounters(enterpriseId, idType, null, null, null, "01-01-2001", request, response);
+		
+		ORU_R01 r01 = (ORU_R01) object;
+		assertNull(r01);
 		
 	}
 	
@@ -86,8 +142,9 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		
 	}	
 	
-	@Ignore
-	@Test
+	
+	
+/*	@Test
 	@Verifies(value = "should create a blank patient if the given patient is missing(", method = "createEncounters(...)")
 	public void createEncounters_shouldCreateABlankPatientIfTheGivenPatientIsMissing() throws Exception {
 		RHEApatientController controller = new RHEApatientController();
@@ -95,30 +152,28 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
 		HttpServletResponse response = new MockHttpServletResponse();
 		
-		String enterpriseId = "1234";
+		String enterpriseId = "1235";
 		String idType = "ECID";
+		PatientIdentifierType patientIdentifierType = Context
+				.getPatientService().getPatientIdentifierTypeByName(idType);
+		List<PatientIdentifierType> identifierTypeList = new ArrayList<PatientIdentifierType>();
+		identifierTypeList.add(patientIdentifierType);
 		
-		PersonAttributeType personAttributeType = Context.getPersonService().getPersonAttributeType("ECID");
-		assertNull(personAttributeType);
+		List<Patient> patients = Context.getPatientService().getPatients(
+				null, enterpriseId, identifierTypeList, false);
 		
-		String hl7 = "MSH|^~\\&|FORMENTRY|LOCAL|HL7LISTENER|LOCAL|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
-			     + "PID|2|2|2^^^^||John3^Doe^||\r"
-			     + "PV1|1|O|||||10^Kas^Suranga||||||||||||1|||||||||||||||||||||||||201204290117^IN^46202||||||||||||||||||20120504|true\r"
-			     + "ORC|RE||||||||20080226102537|1^Super User\r"
-			     + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
-			     + "OBX|18|DT|5096^RETURN VISIT DATE^99DCT||20080506|||||||||20080212\r"
-			     + "OBX|1|CWE|5018^PROBLEM ADDED^99DCT||5096^HUMAN IMMUNODEFICIENCY VIRUS^99DCT|||||||||20081003\r"
-			     + "OBX|2|CWE|5089^PROBLEM ADDED^99DCT||PROPOSED^ASDFASDFASDF^99DCT|||||||||20081003";
+		System.out.println(patients);
+		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
+			    "sample-orur01-missing-patient.xml"));
 		
 		controller.createEncounters(hl7, enterpriseId, idType, null, request, response);
 		
 		PersonAttributeType newAttributeType = Context.getPersonService().getPersonAttributeType("ECID");
 		assertNotNull(newAttributeType);
 		
-	}
+	}*/
 	
-	@Ignore
-	@Test
+/*	@Test
 	@Verifies(value = "should create a blank location if the given location is missing(", method = "createEncounters(...)")
 	public void createEncounters_shouldCreateABlankLocationIfTheGivenLocationIsMissing() throws Exception {
 		RHEApatientController controller = new RHEApatientController();
@@ -132,20 +187,14 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		Location location = Context.getLocationService().getLocation(10);
 		assertNull(location);
 		
-		String hl7 = "MSH|^~\\&|FORMENTRY|LOCAL|HL7LISTENER|LOCAL|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
-			     + "PID|2|2|2^^^^||John3^Doe^||\r"
-			     + "PV1|10|O|||||10^Kas^Suranga||||||||||||1|||||||||||||||||||||||||201204290117^IN^46202||||||||||||||||||20120504|true\r"
-			     + "ORC|RE||||||||20080226102537|1^Super User\r"
-			     + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
-			     + "OBX|18|DT|5096^RETURN VISIT DATE^99DCT||20080506|||||||||20080212\r"
-			     + "OBX|1|CWE|5018^PROBLEM ADDED^99DCT||5096^HUMAN IMMUNODEFICIENCY VIRUS^99DCT|||||||||20081003\r"
-			     + "OBX|2|CWE|5089^PROBLEM ADDED^99DCT||PROPOSED^ASDFASDFASDF^99DCT|||||||||20081003";
+		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
+			    "sample-orur01-missing-patient.xml"));
 		
 		controller.createEncounters(hl7, enterpriseId, idType, null, request, response);
 		
 		Location newLocation = Context.getLocationService().getLocation("10");
 		assertNotNull(newLocation);
 		
-	}
+	}*/
 	
 }
