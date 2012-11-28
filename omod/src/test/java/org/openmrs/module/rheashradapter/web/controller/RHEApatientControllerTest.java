@@ -143,39 +143,9 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	}	
 	
 	
-	
-/*	@Test
-	@Verifies(value = "should create a blank patient if the given patient is missing(", method = "createEncounters(...)")
-	public void createEncounters_shouldCreateABlankPatientIfTheGivenPatientIsMissing() throws Exception {
-		RHEApatientController controller = new RHEApatientController();
-		
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
-		HttpServletResponse response = new MockHttpServletResponse();
-		
-		String enterpriseId = "1235";
-		String idType = "ECID";
-		PatientIdentifierType patientIdentifierType = Context
-				.getPatientService().getPatientIdentifierTypeByName(idType);
-		List<PatientIdentifierType> identifierTypeList = new ArrayList<PatientIdentifierType>();
-		identifierTypeList.add(patientIdentifierType);
-		
-		List<Patient> patients = Context.getPatientService().getPatients(
-				null, enterpriseId, identifierTypeList, false);
-		
-		System.out.println(patients);
-		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
-			    "sample-orur01-missing-patient.xml"));
-		
-		controller.createEncounters(hl7, enterpriseId, idType, null, request, response);
-		
-		PersonAttributeType newAttributeType = Context.getPersonService().getPersonAttributeType("ECID");
-		assertNotNull(newAttributeType);
-		
-	}*/
-	
-/*	@Test
-	@Verifies(value = "should create a blank location if the given location is missing(", method = "createEncounters(...)")
-	public void createEncounters_shouldCreateABlankLocationIfTheGivenLocationIsMissing() throws Exception {
+	@Test
+	@Verifies(value = "should fail on unknown notification type(", method = "createEncounters(...)")
+	public void createEncounters_shouldfailOnUnknownNotificationType() throws Exception {
 		RHEApatientController controller = new RHEApatientController();
 		
 		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
@@ -184,17 +154,36 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String enterpriseId = "1234";
 		String idType = "ECID";
 		
-		Location location = Context.getLocationService().getLocation(10);
-		assertNull(location);
+		assertEquals(Context.getEncounterService().getEncountersByPatientId(2).size(),1);
 		
 		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
-			    "sample-orur01-missing-patient.xml"));
+			    "sample-orur01.xml"));		
+		Object object = controller.createEncounters(hl7, enterpriseId, idType, "UNKNOWN", request, response);
+		assertNull(object);
+
 		
-		controller.createEncounters(hl7, enterpriseId, idType, null, request, response);
-		
-		Location newLocation = Context.getLocationService().getLocation("10");
-		assertNotNull(newLocation);
-		
-	}*/
+	}
 	
+	@Test
+	@Verifies(value = "should create ORUR01 message for known notification type(", method = "createEncounters(...)")
+	public void createEncounters_shouldCreateORUR01MessageForKnownNotificationType() throws Exception {
+		RHEApatientController controller = new RHEApatientController();
+		
+		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
+		HttpServletResponse response = new MockHttpServletResponse();
+		
+		String enterpriseId = "1234";
+		String idType = "ECID";
+		
+		assertEquals(Context.getEncounterService().getEncountersByPatientId(2).size(),1);
+		
+		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
+			    "sample-orur01.xml"));		
+		Encounter encounter = (Encounter) controller.createEncounters(hl7, enterpriseId, idType, "RISK", request, response);
+		assertNotNull(encounter);
+		assertTrue(encounter instanceof Encounter);
+
+		
+	}
+		
 }
