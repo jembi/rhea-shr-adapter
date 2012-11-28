@@ -1,5 +1,7 @@
 package org.openmrs.module.rheashradapter.web.controller;
 
+
+
 import static org.junit.Assert.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -11,6 +13,7 @@ import org.openmrs.Encounter;
 import org.openmrs.api.context.Context;
 
 import org.openmrs.module.rheashradapter.util.RHEAHL7Constants;
+import org.openmrs.module.rheashradapter.web.controller.RHEApatientController;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.openmrs.test.Verifies;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -187,3 +190,4 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	}
 		
 }
+
