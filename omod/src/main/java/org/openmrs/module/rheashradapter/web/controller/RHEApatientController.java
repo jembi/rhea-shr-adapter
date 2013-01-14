@@ -112,7 +112,6 @@ public class RHEApatientController {
 		log.info("Enterprise Patient Id is :" + patientId);
 		log.info("Enterprise Id type is :" + idType);
 		log.info("encounterUniqueId is :" + encounterUniqueId);
-		System.out.println("dateStart is :" + dateStart);
 
 		GetEncounterLog getEncounterLog = new GetEncounterLog();
 		getEncounterLog.setLogTime(new Date());
@@ -120,7 +119,6 @@ public class RHEApatientController {
 		getEncounterLog.setEncounterUniqueId(encounterUniqueId);
 
 		// first, we create from and to data objects out of the String parameters
-		
 		response.setContentType("text/xml");
 
 		if (!idType.equals("ECID")) { // Later on we may need to manage multiple
@@ -140,7 +138,7 @@ public class RHEApatientController {
 			return null;
 		}
 
-		SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		try {
 			if (dateStart != null)
 				fromDate = format.parse(dateStart);
@@ -158,7 +156,7 @@ public class RHEApatientController {
 					}			
 			return null;
 		}
-
+		
 		log.info("fromDate is :" + fromDate);
 		getEncounterLog.setDateStart(fromDate);
 
@@ -180,7 +178,7 @@ public class RHEApatientController {
 			    } 			
 			return null;
 		}
-
+		
 		log.info("toDate is :" + toDate);
 		getEncounterLog.setDateEnd(toDate);
 
@@ -326,9 +324,6 @@ public class RHEApatientController {
 			@RequestParam(value = "idType", required = true) String idType,
 			@RequestParam(value = "notificationType", required = false) String notificationType,
 			HttpServletRequest request, HttpServletResponse response) {
-		System.out.println("hl7 msg :" + hl7);
-		System.out.println("patientId :" + patientId);
-		System.out.println("notificationType :" + notificationType);
 		
 		log.info("RHEA HL7 Message Controller call detected...");
 		XmlMessageWriter xmlMessagewriter = new XmlMessageWriter();
@@ -340,7 +335,6 @@ public class RHEApatientController {
 		
 		LogEncounterService service = Context
 				.getService(LogEncounterService.class);
-		System.out.println("notificationType :" + notificationType);
 		PostEncounterLog postEncounterLog = new PostEncounterLog();
 		postEncounterLog.setPatientId(patientId);
 		postEncounterLog.setHl7data(hl7);
@@ -596,7 +590,6 @@ public class RHEApatientController {
 			log.info("Sending HL7 message to HL7 receiver");
 
 		Message response = notificationReceiver.processMessage(hl7Message, enterpriseId);
-		System.out.println("res" + response);
 
 		// Move HL7 inbound queue entry into the archive before exiting
 			log.info("Archiving HL7 inbound queue entry");

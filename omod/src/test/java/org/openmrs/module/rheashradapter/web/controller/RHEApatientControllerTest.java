@@ -86,9 +86,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	@Test
 	@Verifies(value = "should Get Matching Encounters by date created (", method = "getEncounters(...)")
 	public void getEncounters_shouldGetMatchingEncountersByDateCreated() throws Exception {
-		
-		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
-
+				
 		RHEApatientController controller = new RHEApatientController();
 		
 		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
@@ -96,10 +94,12 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String enterpriseId = "1234";
 		String idType = "ECID";
 		
-		Object object = controller.getEncounters(enterpriseId, idType, null, null, "01-01-2010", null, request, response);
+		Object object = controller.getEncounters(enterpriseId, idType, null, "2005-04-31T12:30:23", null, null, request, response);
 		
 		ORU_R01 r01 = (ORU_R01) object;
-		assertNull(r01);
+		assertNotNull(r01);
+		assertEquals("1234", r01.getPATIENT_RESULT().getPATIENT().getPID().getPatientIdentifierList(0).getIDNumber().toString());
+
 		
 	}
 	
@@ -107,8 +107,6 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	@Verifies(value = "should Get Matching Encounters by date end (", method = "getEncounters(...)")
 	public void getEncounters_shouldGetMatchingEncountersByDateEnd() throws Exception {
 		
-		Context.getAdministrationService().addGlobalProperty("rheashradapter.sendingFaculty", "Shared Health Record");
-
 		RHEApatientController controller = new RHEApatientController();
 		
 		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
@@ -116,10 +114,9 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String enterpriseId = "1234";
 		String idType = "ECID";
 		
-		Object object = controller.getEncounters(enterpriseId, idType, null, null, null, "01-01-2001", request, response);
+		Object object = controller.getEncounters(enterpriseId, idType, null, null, "2007-05-02T12:30:23", null, request, response);
 		
 		ORU_R01 r01 = (ORU_R01) object;
-		assertNull(r01);
 		
 	}
 	
