@@ -30,16 +30,20 @@ import org.openmrs.ConceptName;
 import org.openmrs.ConceptProposal;
 import org.openmrs.Drug;
 import org.openmrs.Encounter;
+import org.openmrs.EncounterRole;
 import org.openmrs.EncounterType;
 import org.openmrs.Location;
 import org.openmrs.Obs;
 import org.openmrs.Patient;
+import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.Person;
 import org.openmrs.PersonAttribute;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.PersonName;
+import org.openmrs.Provider;
 import org.openmrs.User;
+import org.openmrs.api.EncounterService;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7Constants;
 import org.openmrs.hl7.HL7InQueueProcessor;
@@ -59,6 +63,7 @@ import ca.uhn.hl7v2.model.Type;
 import ca.uhn.hl7v2.model.Varies;
 import ca.uhn.hl7v2.model.v25.datatype.CE;
 import ca.uhn.hl7v2.model.v25.datatype.CWE;
+import ca.uhn.hl7v2.model.v25.datatype.CX;
 import ca.uhn.hl7v2.model.v25.datatype.DT;
 import ca.uhn.hl7v2.model.v25.datatype.DTM;
 import ca.uhn.hl7v2.model.v25.datatype.FT;
@@ -177,6 +182,8 @@ public class RHEA_ORU_R01Handler implements Application {
 		PID pid = getPID(oru);
 		PV1 pv1 = getPV1(oru);
 		ORC orc = getORC(oru);
+		
+		addIdentifiers(pid);
 		
 		ORU_R01_PATIENT_RESULT result = oru.getPATIENT_RESULT();
 		result.getORDER_OBSERVATIONReps();
@@ -328,6 +335,45 @@ public class RHEA_ORU_R01Handler implements Application {
 		
 	}
 	
+	private void addIdentifiers(PID pid) {
+		CX[] cxs = pid.getPatientIdentifierList();
+		Patient patient = null;
+		CX omrsCX = null;
+		for(CX cx : cxs) {
+			if (cx.getIdentifierTypeCode().getValue().startsWith("OMRS")){
+				omrsCX = cx;
+			}
+		}
+		
+		try {
+			patient = getPatient();
+		} catch (HL7Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	   PatientIdentifierType pidType = Context.getPatientService().getPatientIdentifierTypeByName(omrsCX.getIdentifierTypeCode().getValue());
+	   if(pidType == null) {
+		   pidType = new PatientIdentifierType();
+		   pidType.setName(omrsCX.getIdentifierTypeCode().getValue());
+		   pidType.setDescription("OMRS Identifier");
+		   pidType.setRequired(false);
+		   Context.getPatientService().savePatientIdentifierType(pidType);
+	   }
+		
+	   	PatientIdentifier identifier = new PatientIdentifier();
+		identifier.setIdentifierType(pidType);
+		identifier.setLocation(Context.getLocationService().getLocation(1));
+		identifier.setDateCreated(new Date());
+		identifier.setVoided(false);
+		identifier.setIdentifier(omrsCX.getIDNumber().getValue());
+		
+		patient.addIdentifier(identifier);
+		
+		Context.getPatientService().savePatient(patient);
+		
+	}
+
 	private MSH getMSH(ORU_R01 oru) {
 		return oru.getMSH();
 	}
@@ -363,13 +409,22 @@ public class RHEA_ORU_R01Handler implements Application {
 			encounter = new Encounter();
 			
 			Date encounterDate = getEncounterDate(obr);
-			Person provider = getProvider(pv1);
+			Provider provider = getProvider(pv1);
 			Location location = getLocation(msh, obr);
 			EncounterType encounterType = getEncounterType(pv1);
 			User enterer = Context.getAuthenticatedUser();
 			
 			encounter.setEncounterDatetime(encounterDate);
-			encounter.setProvider(provider);
+			
+			//when
+			EncounterRole enounterRole = new EncounterRole();
+			enounterRole.setName("SHR Provider");
+			enounterRole.setDescription("Created by the SHR");
+			
+			Context.getEncounterService().saveEncounterRole(enounterRole);
+			
+			//encounter.addProvider(enounterRole, provider);
+			encounter.setProvider(enounterRole, provider);
 			encounter.setPatient(patient);
 			encounter.setLocation(location);
 			encounter.setEncounterType(encounterType);
@@ -798,53 +853,30 @@ public class RHEA_ORU_R01Handler implements Application {
 		return tsToDate(obr.getObservationDateTime());
 	}
 	
-	private Person getProvider(PV1 pv1) throws HL7Exception {
+	private Provider getProvider(PV1 pv1) throws HL7Exception {
 		String providerId = pv1.getAttendingDoctor(0).getIDNumber().getValue();
+		Provider providerObject = null;
 		
-		List<PatientIdentifierType> identifierTypeList = null;
-		Person provider = null;
+		providerObject = Context.getProviderService().getProviderByIdentifier(providerId);
 		
-		if (providerId != null) {
-			
+		if (providerObject == null) {
 			Person person = service.getPersonByEPID(providerId);
-		
-			if(person != null)
-			provider = person;
-			else{
 			
-			log.info("ID extracted from the HL7 message does not match with SHR records, a new provider will be created...");
+			if(person != null) {
+				providerObject = new Provider();
+				providerObject.setIdentifier(providerId);
+				providerObject.setName(pv1.getAttendingDoctor(0).getGivenName().getValue() +" "+ pv1.getAttendingDoctor(0).getFamilyName().getSurname().getValue());
+				
+			}else{
+			providerObject = new Provider();
+			providerObject.setIdentifier(providerId);
+			providerObject.setName(pv1.getAttendingDoctor(0).getGivenName().getValue() +" "+ pv1.getAttendingDoctor(0).getFamilyName().getSurname().getValue());
 			
-			Person candidate = new Person();
-			candidate.addName(new PersonName(pv1.getAttendingDoctor(0).getGivenName().getValue(),"",pv1.getAttendingDoctor(0).getFamilyName().getSurname().getValue()));
-			PersonAttributeType epidType = Context.getPersonService().getPersonAttributeTypeByName("EPID");
-			
-			if(epidType == null){
-				log.info("Creating a PersonAttributeType for EPID since it does not exsist");
-				epidType = new PersonAttributeType();
-				epidType.setName("EPID");
-				epidType.setDescription("Stores the EPID of the Provider");
-				Context.getPersonService().savePersonAttributeType(epidType);
-			}
-			
-			PersonAttributeType roleType = Context.getPersonService().getPersonAttributeTypeByName("Role");
-			
-			if(roleType == null){
-				log.info("Creating a PersonAttributeType for Role since it does not exsist");
-				roleType = new PersonAttributeType();
-				roleType.setName("Role");
-				roleType.setDescription("Stores the Role of the Person object");
-				Context.getPersonService().savePersonAttributeType(roleType);
-			}
-			
-			candidate.addAttribute(new PersonAttribute(epidType, providerId));
-			candidate.addAttribute(new PersonAttribute(roleType, "Provider"));
-			
-			candidate.setGender("N/A");
-			candidate = Context.getPersonService().savePerson(candidate);
-			provider = candidate;
 			}
 		}
-		return provider;
+		Context.getProviderService().saveProvider(providerObject);
+
+		return providerObject;
 	}
 	
 	private Patient getPatient() throws HL7Exception {

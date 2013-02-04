@@ -409,6 +409,11 @@ public class RHEApatientController {
 			// I am not checking the identifier type here. Need to come back and add a check for this
 			if (patients.size() == 1) {
 				patient = patients.get(0);
+				
+				PatientIdentifier identifier = patient.getPatientIdentifier("ECID");
+				identifier.setPreferred(true);
+				Context.getPatientService().savePatient(patient);
+				
 			}
 		}
 		if (patient == null) {
@@ -465,6 +470,7 @@ public class RHEApatientController {
 			identifier.setLocation(Context.getLocationService().getLocation(1));
 			identifier.setDateCreated(new Date());
 			identifier.setVoided(false);
+			identifier.setPreferred(true);
 			patient.addIdentifier(identifier);
 
 		    patient.setGender("N/A");
@@ -481,6 +487,9 @@ public class RHEApatientController {
 			Context.getPatientService().savePatient(patient);	
 			
 		}
+		
+		
+		
 		
 			log.info("Source key : " + sourceKey);
 			//log.info("Source  : " + source);
