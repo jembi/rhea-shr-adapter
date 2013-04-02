@@ -31,7 +31,7 @@
 		<property name="result" type="java.lang.String" 
 			column="result" not-null="false" length="40" />
 			
-		<property name="error" type="java.lang.String" length="255"
+		<property name="error" type="java.lang.String" length="16777215"
 			column="error" />
 		
 	</class>
