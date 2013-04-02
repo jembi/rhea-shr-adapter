@@ -5,6 +5,11 @@
 
 <hibernate-configuration>
 	<session-factory>
-		${hbmConfig}
+		<mapping resource="GetEncounterLog.hbm.xml" />
+		<mapping resource="MatchingEncounters.hbm.xml" />
+		<mapping resource="PostEncounterLog.hbm.xml" />
+		<mapping resource="PatientMergeRecord.hbm.xml" />
+		<mapping resource="PatientRestoreRecord.hbm.xml" />
+		<mapping resource="EncounterDataObject.hbm.xml" />
 	</session-factory>
 </hibernate-configuration>

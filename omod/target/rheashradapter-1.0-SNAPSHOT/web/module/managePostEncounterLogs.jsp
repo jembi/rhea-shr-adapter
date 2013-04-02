@@ -30,7 +30,10 @@
 		<td valign="top">${postEncounterLog.dateCreated}</td>
 		<td valign="top">${postEncounterLog.userId}</td>
 		<td valign="top">${postEncounterLog.result}</td>
-		<td valign="top">${postEncounterLog.error}</td>
+		<td valign="top">
+		<a href="<openmrs:contextPath />/module/rheashradapter/postRequestTemplate.form?postRequestId=${postEncounterLog.postRequestId}">
+		<c:if test="${not empty postEncounterLog.error}">
+		Error description</c:if></a></td>
 	</tr>
 	</c:forEach>
 </table>

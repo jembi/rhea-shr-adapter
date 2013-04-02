@@ -64,7 +64,10 @@
 	<mappingFiles>
 		PostEncounterLog.hbm.xml
 		GetEncounterLog.hbm.xml
-		MatchingEncounters.hbm.xml		
+		MatchingEncounters.hbm.xml	
+		PatientMergeRecord.hbm.xml
+		PatientRestoreRecord.hbm.xml
+		EncounterDataObject.hbm.xml	
 	</mappingFiles>
 
 	<!-- Internationalization -->

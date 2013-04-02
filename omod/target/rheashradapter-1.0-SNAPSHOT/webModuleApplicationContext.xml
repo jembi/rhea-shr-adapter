@@ -23,7 +23,7 @@
 	<!-- Add here beans related to the web context -->
 	<bean parent="serviceContext">
                 <property name="moduleService">
-                        <list>
+                        <list merge="true">
                                 <value>org.openmrs.module.rheashradapter.api.LogEncounterService</value> 
                                 <bean class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
                                         <property name="transactionManager"><ref bean="transactionManager"/></property>
@@ -42,7 +42,36 @@
                                         <property name="transactionAttributeSource">
                                                 <bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
                                         </property>
-                                </bean>        
+                                </bean>
+                                        
+                        </list>
+                </property>
+        </bean>
+        
+        	<!-- Add here beans related to the web context -->
+	<bean parent="serviceContext">
+                <property name="moduleService">
+                        <list merge="true">
+                                <value>org.openmrs.module.rheashradapter.api.PatientMergeService</value> 
+                                <bean class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+                                        <property name="transactionManager"><ref bean="transactionManager"/></property>
+                                        <property name="target">
+                                                <bean class="org.openmrs.module.rheashradapter.api.PatientMergeServiceImpl">
+                                                        <property name="patientMergeDAO">
+                                                                <bean class="org.openmrs.module.rheashradapter.hibernate.PatientMergeDAOImpl" autowire="byType">
+                                                                        <property name="sessionFactory"><ref bean="sessionFactory" /></property>
+                                                                </bean>
+                                                        </property>
+                                                </bean>
+                                        </property>
+                                        <property name="preInterceptors">
+                                                <ref bean="serviceInterceptors" />
+                                        </property>
+                                        <property name="transactionAttributeSource">
+                                                <bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
+                                        </property>
+                                </bean> 
+                                        
                         </list>
                 </property>
         </bean>
@@ -51,7 +80,7 @@
 	<bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping"/>
 	<bean id="RHEApatientController" class="org.openmrs.module.rheashradapter.web.controller.RHEApatientController"/>
 	
-	<context:component-scan base-package="org.openmrs.module.rheashradapter.web.controller" />
- 
+ 	<context:component-scan base-package="org.openmrs.module.rheashradapter.web.controller" />
+
 		
 </beans>
