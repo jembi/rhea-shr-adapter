@@ -170,7 +170,6 @@ public class RHEApatientController {
 
 			service.restorePatient("ECID", restorePatientId);
 	
-			 System.out.println("hitttttttttttttttttttttttttttttttttttttttttttttttt");
 			 }
 
 
@@ -230,7 +229,7 @@ public class RHEApatientController {
 			return null;
 		}
 
-		SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		try {
 			if (dateStart != null)
 				fromDate = format.parse(dateStart);
@@ -505,7 +504,12 @@ public class RHEApatientController {
 			// I am not checking the identifier type here. Need to come back and add a check for this
 			if (patients.size() == 1) {
 				patient = patients.get(0);
+				
+				PatientIdentifier identifier = patient.getPatientIdentifier("ECID");
+				identifier.setPreferred(true);
+				Context.getPatientService().savePatient(patient);				
 			}
+	
 		}
 		if (patient == null) {
 			log.info("The specified patient was not found. A new patient wil be created..");
@@ -561,6 +565,7 @@ public class RHEApatientController {
 			identifier.setLocation(Context.getLocationService().getLocation(1));
 			identifier.setDateCreated(new Date());
 			identifier.setVoided(false);
+			identifier.setPreferred(true);
 			patient.addIdentifier(identifier);
 
 		    patient.setGender("N/A");
