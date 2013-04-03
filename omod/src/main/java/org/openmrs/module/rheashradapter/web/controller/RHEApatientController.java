@@ -17,6 +17,7 @@ package org.openmrs.module.rheashradapter.web.controller;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -29,6 +30,16 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.CharacterData;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -72,6 +83,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.xml.sax.InputSource;
 
 import ca.uhn.hl7v2.HL7Exception;
 import ca.uhn.hl7v2.model.Message;
@@ -87,9 +99,10 @@ public class RHEApatientController {
 	private LoggerUtil util = new LoggerUtil();
 
 	
-	@RequestMapping(value = "/merge", method = RequestMethod.GET)
+	@RequestMapping(value = "/merge", method = RequestMethod.POST)
 	@ResponseBody
 	public void mergePatients(
+			@RequestBody String mergeMessage,
 			@RequestParam(value = "survivingPatientId", required = true) String survivingPatientId,
 			@RequestParam(value = "retiringPatientId", required = true) String retiringPatientId,
 			HttpServletRequest request, HttpServletResponse response){
@@ -97,22 +110,64 @@ public class RHEApatientController {
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
 		
+		 DocumentBuilder db = null;
+		try {
+			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		} catch (ParserConfigurationException e1) {
+			e1.printStackTrace();
+		}
+		    InputSource is = new InputSource();
+		    is.setCharacterStream(new StringReader(mergeMessage));
+
+		    org.w3c.dom.Document doc = null;
+			try {
+				doc = db.parse(is);
+			} catch (SAXException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		    NodeList nodes = doc.getElementsByTagName("patientIdentifier");
+		    
+		    survivingPatientId = nodes.item(0).getTextContent().trim();
+		    retiringPatientId = nodes.item(1).getTextContent().trim();
+		
 			service.mergePatient("ECID", survivingPatientId, retiringPatientId);
 	
-			 System.out.println("hitttttttttttttttttttttttttttttttttttttttttttttttt");
 			 }
 	
 	
-	@RequestMapping(value = "/restore", method = RequestMethod.GET)
+	@RequestMapping(value = "/unmerge", method = RequestMethod.POST)
 	@ResponseBody
-	public void mergePatients(
+	public void unMergePatients(
+			@RequestBody String unMergeMessage,
 			@RequestParam(value = "restorePatientId", required = true) String restorePatientId,
 			HttpServletRequest request, HttpServletResponse response){
 		
 			PatientMergeService service = Context
 				.getService(PatientMergeService.class);
 		
-			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			 DocumentBuilder db = null;
+				try {
+					db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+				} catch (ParserConfigurationException e1) {
+					e1.printStackTrace();
+				}
+				    InputSource is = new InputSource();
+				    is.setCharacterStream(new StringReader(unMergeMessage));
+
+				    org.w3c.dom.Document doc = null;
+					try {
+						doc = db.parse(is);
+					} catch (SAXException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				    NodeList nodes = doc.getElementsByTagName("patientIdentifier");
+				    
+				    restorePatientId = nodes.item(0).getTextContent().trim();
+
 			service.restorePatient("ECID", restorePatientId);
 	
 			 System.out.println("hitttttttttttttttttttttttttttttttttttttttttttttttt");
@@ -147,6 +202,7 @@ public class RHEApatientController {
 		log.info("Enterprise Patient Id is :" + patientId);
 		log.info("Enterprise Id type is :" + idType);
 		log.info("encounterUniqueId is :" + encounterUniqueId);
+		System.out.println("dateStart is :" + dateStart);
 
 		GetEncounterLog getEncounterLog = new GetEncounterLog();
 		getEncounterLog.setLogTime(new Date());
@@ -154,6 +210,7 @@ public class RHEApatientController {
 		getEncounterLog.setEncounterUniqueId(encounterUniqueId);
 
 		// first, we create from and to data objects out of the String parameters
+		
 		response.setContentType("text/xml");
 
 		if (!idType.equals("ECID")) { // Later on we may need to manage multiple
@@ -173,7 +230,7 @@ public class RHEApatientController {
 			return null;
 		}
 
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
 		try {
 			if (dateStart != null)
 				fromDate = format.parse(dateStart);
@@ -191,7 +248,7 @@ public class RHEApatientController {
 					}			
 			return null;
 		}
-		
+
 		log.info("fromDate is :" + fromDate);
 		getEncounterLog.setDateStart(fromDate);
 
@@ -213,7 +270,7 @@ public class RHEApatientController {
 			    } 			
 			return null;
 		}
-		
+
 		log.info("toDate is :" + toDate);
 		getEncounterLog.setDateEnd(toDate);
 
@@ -359,6 +416,9 @@ public class RHEApatientController {
 			@RequestParam(value = "idType", required = true) String idType,
 			@RequestParam(value = "notificationType", required = false) String notificationType,
 			HttpServletRequest request, HttpServletResponse response) {
+		System.out.println("hl7 msg :" + hl7);
+		System.out.println("patientId :" + patientId);
+		System.out.println("notificationType :" + notificationType);
 		
 		log.info("RHEA HL7 Message Controller call detected...");
 		XmlMessageWriter xmlMessagewriter = new XmlMessageWriter();
@@ -370,6 +430,7 @@ public class RHEApatientController {
 		
 		LogEncounterService service = Context
 				.getService(LogEncounterService.class);
+		System.out.println("notificationType :" + notificationType);
 		PostEncounterLog postEncounterLog = new PostEncounterLog();
 		postEncounterLog.setPatientId(patientId);
 		postEncounterLog.setHl7data(hl7);
@@ -444,11 +505,6 @@ public class RHEApatientController {
 			// I am not checking the identifier type here. Need to come back and add a check for this
 			if (patients.size() == 1) {
 				patient = patients.get(0);
-				
-				PatientIdentifier identifier = patient.getPatientIdentifier("ECID");
-				identifier.setPreferred(true);
-				Context.getPatientService().savePatient(patient);
-				
 			}
 		}
 		if (patient == null) {
@@ -505,7 +561,6 @@ public class RHEApatientController {
 			identifier.setLocation(Context.getLocationService().getLocation(1));
 			identifier.setDateCreated(new Date());
 			identifier.setVoided(false);
-			identifier.setPreferred(true);
 			patient.addIdentifier(identifier);
 
 		    patient.setGender("N/A");
@@ -522,9 +577,6 @@ public class RHEApatientController {
 			Context.getPatientService().savePatient(patient);	
 			
 		}
-		
-		
-		
 		
 			log.info("Source key : " + sourceKey);
 			//log.info("Source  : " + source);
@@ -634,6 +686,7 @@ public class RHEApatientController {
 			log.info("Sending HL7 message to HL7 receiver");
 
 		Message response = notificationReceiver.processMessage(hl7Message, enterpriseId);
+		System.out.println("res" + response);
 
 		// Move HL7 inbound queue entry into the archive before exiting
 			log.info("Archiving HL7 inbound queue entry");
