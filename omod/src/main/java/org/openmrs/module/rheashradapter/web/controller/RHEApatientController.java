@@ -52,6 +52,7 @@ import org.openmrs.hl7.HL7InError;
 import org.openmrs.hl7.HL7InQueue;
 import org.openmrs.hl7.HL7Source;
 import org.openmrs.module.rheashradapter.api.LogEncounterService;
+import org.openmrs.module.rheashradapter.api.PatientMergeService;
 import org.openmrs.module.rheashradapter.model.GetEncounterLog;
 import org.openmrs.module.rheashradapter.model.MatchingEncounters;
 import org.openmrs.module.rheashradapter.model.PostEncounterLog;
@@ -84,6 +85,40 @@ public class RHEApatientController {
 	private HL7Receiver receiver = new HL7Receiver();
 	private RsmsHl7Receiver notificationReceiver = new RsmsHl7Receiver();
 	private LoggerUtil util = new LoggerUtil();
+
+	
+	@RequestMapping(value = "/merge", method = RequestMethod.GET)
+	@ResponseBody
+	public void mergePatients(
+			@RequestParam(value = "survivingPatientId", required = true) String survivingPatientId,
+			@RequestParam(value = "retiringPatientId", required = true) String retiringPatientId,
+			HttpServletRequest request, HttpServletResponse response){
+		
+		PatientMergeService service = Context
+				.getService(PatientMergeService.class);
+		
+			service.mergePatient("ECID", survivingPatientId, retiringPatientId);
+	
+			 System.out.println("hitttttttttttttttttttttttttttttttttttttttttttttttt");
+			 }
+	
+	
+	@RequestMapping(value = "/restore", method = RequestMethod.GET)
+	@ResponseBody
+	public void mergePatients(
+			@RequestParam(value = "restorePatientId", required = true) String restorePatientId,
+			HttpServletRequest request, HttpServletResponse response){
+		
+			PatientMergeService service = Context
+				.getService(PatientMergeService.class);
+		
+			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			service.restorePatient("ECID", restorePatientId);
+	
+			 System.out.println("hitttttttttttttttttttttttttttttttttttttttttttttttt");
+			 }
+
+
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.GET)
 	@ResponseBody

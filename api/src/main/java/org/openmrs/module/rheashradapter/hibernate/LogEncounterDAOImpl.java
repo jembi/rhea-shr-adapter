@@ -158,4 +158,5 @@ public class LogEncounterDAOImpl implements LogEncounterDAO{
 		return (PostEncounterLog) sessionFactory.getCurrentSession().get(PostEncounterLog.class, postRequestId);
 
 	}
+
 }

@@ -81,6 +81,51 @@ CREATE TABLE  `rheashradapter_get_encounter_log` (
 			ALTER TABLE rheashradapter_get_encounter_log ADD enterprise_location_id varchar(40) default NULL after encounter_unique_id ;
 		</sql>
 	</diff>
+<diff>
+		<version>1.0.4</version>
+		<author>suranga</author>
+		<date>May 25th, 2013</date>
+		<description>
+			Add logging for patient merge requests.
+		</description>
+		<sql>
+		DROP TABLE IF EXISTS `rheashradapter_patient_merge_record`;
+		CREATE TABLE `rheashradapter_patient_merge_record` (
+			`merge_record_id` int AUTO_INCREMENT,
+			`surviving_patient` int,
+			`retired_patient` int,
+			  `surviving_patient_id` varchar(40) default NULL,
+ 				 `retired_patient_id` varchar(40) default NULL,
+ 				   `log_time` varchar(40) default NULL,
+			`user_id` int default NULL,
+			`status` varchar(20) default NULL,
+			  PRIMARY KEY  (`merge_record_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+			
+					DROP TABLE IF EXISTS `rheashradapter_patient_restore_record`;
+		CREATE TABLE `rheashradapter_patient_restore_record` (
+			`restore_record_id` int AUTO_INCREMENT,
+			`retired_patient` int,
+ 				 `retired_patient_id` varchar(40) default NULL,
+ 				   `log_time` varchar(40) default NULL,
+			`user_id` int default NULL,
+			`status` varchar(20) default NULL,
+			  PRIMARY KEY  (`restore_record_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+			
+			DROP TABLE IF EXISTS `rheashradapter_encounter_data_object`;
+	CREATE TABLE `rheashradapter_encounter_data_object` (
+			`encounter_data_object_id` int AUTO_INCREMENT,
+			`merge_record_id` int default NULL,
+			`encounter_id` int default NULL,
+			`obs_id` int default NULL,
+			KEY `merge_id` (`merge_record_id`),
+			CONSTRAINT `merge_id` FOREIGN KEY (`merge_record_id`)
+			REFERENCES `rheashradapter_patient_merge_record` (`merge_record_id`),
+			PRIMARY KEY  (`encounter_data_object_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+		</sql>
+	</diff>
 
 
 </sqldiff>
