@@ -1,6 +1,6 @@
 package org.openmrs.module.rheashradapter.model;
 
-public class EncounterDataObject implements Comparable<EncounterDataObject> {
+public class MergedDataObject implements Comparable<MergedDataObject> {
 	
 	public PatientMergeRecord getPatientMergeRecord() {
 		return patientMergeRecord;
@@ -12,12 +12,12 @@ public class EncounterDataObject implements Comparable<EncounterDataObject> {
 
 	private PatientMergeRecord patientMergeRecord;
 	
-	public Integer getEncounterDataObjectId() {
-		return encounterDataObjectId;
+	public Integer getMergedDataObjectId() {
+		return mergedDataObjectId;
 	}
 
-	public void setEncounterDataObjectId(Integer encounterDataObjectId) {
-		this.encounterDataObjectId = encounterDataObjectId;
+	public void setMergedDataObjectId(Integer mergedDataObjectId) {
+		this.mergedDataObjectId = mergedDataObjectId;
 	}
 
 	public Integer getEncounterId() {
@@ -36,14 +36,14 @@ public class EncounterDataObject implements Comparable<EncounterDataObject> {
 		this.obsId = obsId;
 	}
 
-	private Integer encounterDataObjectId;
+	private Integer mergedDataObjectId;
 	
 	private Integer encounterId;
 	
 	private Integer obsId;
 
 	@Override
-	public int compareTo(EncounterDataObject o) {
+	public int compareTo(MergedDataObject o) {
 		return obsId.compareTo(o.getObsId());
 	}
 	

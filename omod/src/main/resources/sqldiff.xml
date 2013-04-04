@@ -113,16 +113,28 @@ CREATE TABLE  `rheashradapter_get_encounter_log` (
 			  PRIMARY KEY  (`restore_record_id`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 			
-			DROP TABLE IF EXISTS `rheashradapter_encounter_data_object`;
-	CREATE TABLE `rheashradapter_encounter_data_object` (
-			`encounter_data_object_id` int AUTO_INCREMENT,
+			DROP TABLE IF EXISTS `rheashradapter_merged_data_object`;
+	CREATE TABLE `rheashradapter_merged_data_object` (
+			`merged_data_object_id` int AUTO_INCREMENT,
 			`merge_record_id` int default NULL,
 			`encounter_id` int default NULL,
 			`obs_id` int default NULL,
 			KEY `merge_id` (`merge_record_id`),
 			CONSTRAINT `merge_id` FOREIGN KEY (`merge_record_id`)
 			REFERENCES `rheashradapter_patient_merge_record` (`merge_record_id`),
-			PRIMARY KEY  (`encounter_data_object_id`)
+			PRIMARY KEY  (`merged_data_object_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+			
+						DROP TABLE IF EXISTS `rheashradapter_restored_data_object`;
+	CREATE TABLE `rheashradapter_restored_data_object` (
+			`restored_data_object_id` int AUTO_INCREMENT,
+			`restore_record_id` int default NULL,
+			`encounter_id` int default NULL,
+			`obs_id` int default NULL,
+			KEY `restore_id` (`restore_record_id`),
+			CONSTRAINT `restore_id` FOREIGN KEY (`restore_record_id`)
+			REFERENCES `rheashradapter_patient_restore_record` (`restore_record_id`),
+			PRIMARY KEY  (`restored_data_object_id`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		</sql>
 	</diff>
