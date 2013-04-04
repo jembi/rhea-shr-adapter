@@ -56,7 +56,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 
 	}
 
-	public boolean mergePatient(String patientIdentifierType,
+	public String mergePatient(String patientIdentifierType,
 			String survivingPatient, String retiringPatient) {
 
 		PatientMergeRecord patientMergeRecord = new PatientMergeRecord();
@@ -83,10 +83,10 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 					.getPatients(null, retiringPatient, identifiers, false);
 
 			if (patientsToKeep == null) {
-				System.out.println("Error, main patient not found");
+				return "404";
 			}
 			if (patientsToRetire == null) {
-				System.out.println("Error, patient to retire not found");
+				return "404";
 			}
 
 			Patient mainPatient = patientsToKeep.get(0);
@@ -181,7 +181,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientMergeRecord.setStatus("error");
 			patientMergeDAO.savePatientMergeRecord(patientMergeRecord);
 		}
-		return true;
+		return "200";
 
 	}
 
@@ -213,7 +213,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 	}
 
 	@Override
-	public boolean restorePatient(String patientIdentifierType,
+	public String restorePatient(String patientIdentifierType,
 			String restorePatient) {
 		
 		PatientRestoreRecord patientRestoreRecord = new PatientRestoreRecord();
@@ -233,7 +233,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 					.getRetiredPatient());
 			
 			if (p == null) {
-				System.out.println("Error, main patient not found");
+				return "404";
 			}else{
 				patientRestoreRecord.setRetiredPatient(p.getPatientId());
 			}
@@ -298,6 +298,6 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientMergeDAO.savePatientRestore(patientRestoreRecord);
 		}
 
-		return false;
+		return "200";
 	}
 }
