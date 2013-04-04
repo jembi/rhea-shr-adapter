@@ -34,8 +34,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.w3c.dom.CharacterData;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -81,7 +79,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.xml.sax.InputSource;
 
 import ca.uhn.hl7v2.HL7Exception;
 import ca.uhn.hl7v2.model.Message;
@@ -100,7 +97,6 @@ public class RHEApatientController {
 	@ResponseBody
 	public void mergePatients(@RequestBody String mergeMessage,
 			HttpServletRequest request, HttpServletResponse response) {
-
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
 
@@ -119,18 +115,17 @@ public class RHEApatientController {
 
 	}
 
-	@RequestMapping(value = "/unmerge", method = RequestMethod.POST)
+	@RequestMapping(value = "/restore", method = RequestMethod.POST)
 	@ResponseBody
-	public void unMergePatients(@RequestBody String unMergeMessage,
+	public void unMergePatients(@RequestBody String restoreMessage,
 			HttpServletRequest request, HttpServletResponse response) {
 
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
 
-		NodeList nodes = convertToXMl(unMergeMessage);
+		NodeList nodes = convertToXMl(restoreMessage);
 
 		String restorePatientId = nodes.item(0).getTextContent().trim();
-
 		String responseCode = service.restorePatient("ECID", restorePatientId);
 
 		if (responseCode.equals("200"))
@@ -139,7 +134,7 @@ public class RHEApatientController {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 	}
 
-	private NodeList convertToXMl(String mergeMessage) {
+	private NodeList convertToXMl(String message) {
 		DocumentBuilder db = null;
 		try {
 			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -147,7 +142,7 @@ public class RHEApatientController {
 			e.printStackTrace();
 		}
 		InputSource is = new InputSource();
-		is.setCharacterStream(new StringReader(mergeMessage));
+		is.setCharacterStream(new StringReader(message));
 
 		org.w3c.dom.Document doc = null;
 		try {
