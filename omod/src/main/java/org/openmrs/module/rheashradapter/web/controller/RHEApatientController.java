@@ -40,7 +40,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -75,7 +74,6 @@ import org.openmrs.module.rheashradapter.util.RHEAErrorCodes;
 import org.openmrs.module.rheashradapter.util.RsmsHl7Receiver;
 import org.openmrs.module.rheashradapter.util.XmlMessageWriter;
 
-
 import org.springframework.stereotype.Controller;
 
 import org.springframework.web.bind.annotation.RequestBody;
@@ -98,81 +96,69 @@ public class RHEApatientController {
 	private RsmsHl7Receiver notificationReceiver = new RsmsHl7Receiver();
 	private LoggerUtil util = new LoggerUtil();
 
-	
 	@RequestMapping(value = "/merge", method = RequestMethod.POST)
 	@ResponseBody
-	public void mergePatients(
-			@RequestBody String mergeMessage,
-			@RequestParam(value = "survivingPatientId", required = true) String survivingPatientId,
-			@RequestParam(value = "retiringPatientId", required = true) String retiringPatientId,
-			HttpServletRequest request, HttpServletResponse response){
-		
+	public void mergePatients(@RequestBody String mergeMessage,
+			HttpServletRequest request, HttpServletResponse response) {
+
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
-		
-		 DocumentBuilder db = null;
-		try {
-			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		} catch (ParserConfigurationException e1) {
-			e1.printStackTrace();
-		}
-		    InputSource is = new InputSource();
-		    is.setCharacterStream(new StringReader(mergeMessage));
 
-		    org.w3c.dom.Document doc = null;
-			try {
-				doc = db.parse(is);
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		    NodeList nodes = doc.getElementsByTagName("patientIdentifier");
-		    
-		    survivingPatientId = nodes.item(0).getTextContent().trim();
-		    retiringPatientId = nodes.item(1).getTextContent().trim();
-		
-			service.mergePatient("ECID", survivingPatientId, retiringPatientId);
-	
-			 }
-	
-	
+		NodeList nodes = convertToXMl(mergeMessage);
+
+		String survivingPatientId = nodes.item(0).getTextContent().trim();
+		String retiringPatientId = nodes.item(1).getTextContent().trim();
+
+		String responseCode = service.mergePatient("ECID", survivingPatientId,
+				retiringPatientId);
+
+		if (responseCode.equals("200"))
+			response.setStatus(HttpServletResponse.SC_OK);
+		if (responseCode.equals("404"))
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+
+	}
+
 	@RequestMapping(value = "/unmerge", method = RequestMethod.POST)
 	@ResponseBody
-	public void unMergePatients(
-			@RequestBody String unMergeMessage,
-			@RequestParam(value = "restorePatientId", required = true) String restorePatientId,
-			HttpServletRequest request, HttpServletResponse response){
-		
-			PatientMergeService service = Context
+	public void unMergePatients(@RequestBody String unMergeMessage,
+			HttpServletRequest request, HttpServletResponse response) {
+
+		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
-		
-			 DocumentBuilder db = null;
-				try {
-					db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-				} catch (ParserConfigurationException e1) {
-					e1.printStackTrace();
-				}
-				    InputSource is = new InputSource();
-				    is.setCharacterStream(new StringReader(unMergeMessage));
 
-				    org.w3c.dom.Document doc = null;
-					try {
-						doc = db.parse(is);
-					} catch (SAXException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				    NodeList nodes = doc.getElementsByTagName("patientIdentifier");
-				    
-				    restorePatientId = nodes.item(0).getTextContent().trim();
+		NodeList nodes = convertToXMl(unMergeMessage);
 
-			service.restorePatient("ECID", restorePatientId);
-	
-			 }
+		String restorePatientId = nodes.item(0).getTextContent().trim();
 
+		String responseCode = service.restorePatient("ECID", restorePatientId);
 
+		if (responseCode.equals("200"))
+			response.setStatus(HttpServletResponse.SC_OK);
+		if (responseCode.equals("404"))
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	}
+
+	private NodeList convertToXMl(String mergeMessage) {
+		DocumentBuilder db = null;
+		try {
+			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+		InputSource is = new InputSource();
+		is.setCharacterStream(new StringReader(mergeMessage));
+
+		org.w3c.dom.Document doc = null;
+		try {
+			doc = db.parse(is);
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return doc.getElementsByTagName("patientIdentifier");
+	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.GET)
 	@ResponseBody
@@ -183,13 +169,12 @@ public class RHEApatientController {
 			@RequestParam(value = "elid", required = false) String enterpriseLocationIdentifier,
 			@RequestParam(value = "dateStart", required = false) String dateStart,
 			@RequestParam(value = "dateEnd", required = false) String dateEnd,
-			HttpServletRequest request, HttpServletResponse response)
-			 {
+			HttpServletRequest request, HttpServletResponse response) {
 
 		LogEncounterService service = Context
 				.getService(LogEncounterService.class);
 		XmlMessageWriter xmlMessagewriter = new XmlMessageWriter();
-		
+
 		String hl7Msg = null;
 
 		Date fromDate = null;
@@ -208,24 +193,31 @@ public class RHEApatientController {
 		getEncounterLog.setPatientId(patientId);
 		getEncounterLog.setEncounterUniqueId(encounterUniqueId);
 
-		// first, we create from and to data objects out of the String parameters
-		
+		// first, we create from and to data objects out of the String
+		// parameters
+
 		response.setContentType("text/xml");
 
 		if (!idType.equals("ECID")) { // Later on we may need to manage multiple
 										// types of ID's. In such a case, this
 										// will become more complex
-			log.info(RHEAErrorCodes.INVALID_ID_TYPE);		
-			getEncounterLog = util.getLogger(getEncounterLog, RHEAErrorCodes.INVALID_ID_TYPE, RHEAErrorCodes.ID_TYPE_DETAIL, RequestOutcome.BAD_REQUEST.getResultType(), null, null, null);
+			log.info(RHEAErrorCodes.INVALID_ID_TYPE);
+			getEncounterLog = util.getLogger(getEncounterLog,
+					RHEAErrorCodes.INVALID_ID_TYPE,
+					RHEAErrorCodes.ID_TYPE_DETAIL,
+					RequestOutcome.BAD_REQUEST.getResultType(), null, null,
+					null);
 			service.saveGetEncounterLog(getEncounterLog);
-			
+
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			 try {
-			        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.ID_TYPE_DETAIL);
-			        
-			    } catch (IOException e) {
-			        e.printStackTrace();
-			    } 			
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						RHEAErrorCodes.ID_TYPE_DETAIL);
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			return null;
 		}
 
@@ -234,17 +226,20 @@ public class RHEApatientController {
 			if (dateStart != null)
 				fromDate = format.parse(dateStart);
 		} catch (ParseException e) {
-			log.info(RHEAErrorCodes.INVALID_START_DATE
-					+ dateStart);
-			getEncounterLog = util.getLogger(getEncounterLog, RHEAErrorCodes.INVALID_START_DATE, null, RequestOutcome.BAD_REQUEST.getResultType(), null, null, e);
+			log.info(RHEAErrorCodes.INVALID_START_DATE + dateStart);
+			getEncounterLog = util.getLogger(getEncounterLog,
+					RHEAErrorCodes.INVALID_START_DATE, null,
+					RequestOutcome.BAD_REQUEST.getResultType(), null, null, e);
 			service.saveGetEncounterLog(getEncounterLog);
-			
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST); 
-			        try {
-						xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), e.toString());
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}			
+
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						e.toString());
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 			return null;
 		}
 
@@ -256,17 +251,22 @@ public class RHEApatientController {
 				toDate = format.parse(dateEnd);
 		} catch (ParseException e) {
 			log.info(RHEAErrorCodes.INVALID_END_DATE + dateEnd);
-			
-			getEncounterLog = util.getLogger(getEncounterLog, RHEAErrorCodes.INVALID_END_DATE, null, RequestOutcome.BAD_REQUEST.getResultType(), fromDate, null, e);
+
+			getEncounterLog = util.getLogger(getEncounterLog,
+					RHEAErrorCodes.INVALID_END_DATE, null,
+					RequestOutcome.BAD_REQUEST.getResultType(), fromDate, null,
+					e);
 			service.saveGetEncounterLog(getEncounterLog);
-			
+
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			 try {
-			        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), e.toString());
-			        
-			    } catch (Exception e1) {
-			        e1.printStackTrace();
-			    } 			
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						e.toString());
+
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
 			return null;
 		}
 
@@ -284,18 +284,24 @@ public class RHEApatientController {
 					null, patientId, identifierTypeList, false);
 			if (patients.size() == 1) {
 				p = patients.get(0);
-			}else{
+			} else {
 				log.info(RHEAErrorCodes.INVALID_RESULTS + patientId);
-				
-				getEncounterLog = util.getLogger(getEncounterLog, RHEAErrorCodes.INVALID_RESULTS, RHEAErrorCodes.INVALID_RESULTS_DETAIL, RequestOutcome.BAD_REQUEST.getResultType(), fromDate, toDate, null);
+
+				getEncounterLog = util.getLogger(getEncounterLog,
+						RHEAErrorCodes.INVALID_RESULTS,
+						RHEAErrorCodes.INVALID_RESULTS_DETAIL,
+						RequestOutcome.BAD_REQUEST.getResultType(), fromDate,
+						toDate, null);
 				service.saveGetEncounterLog(getEncounterLog);
-				
+
 				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-				 try {
-				        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.INVALID_RESULTS);        
-				    } catch (Exception e1) {
-				        e1.printStackTrace();
-				    } 			
+				try {
+					xmlMessagewriter.parseMessage(response.getWriter(),
+							RequestOutcome.BAD_REQUEST.getResultType(),
+							RHEAErrorCodes.INVALID_RESULTS);
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
 				return null;
 			}
 		}
@@ -306,11 +312,12 @@ public class RHEApatientController {
 
 			if (p != null) {
 				// get all the encounters for this patient
-				List<Encounter> encounterList = Context.getEncounterService()						
+				List<Encounter> encounterList = Context.getEncounterService()
 						.getEncounters(p, null, fromDate, toDate, null, null,
 								null, false);
-				
-				// if the enconteruniqueId is not null, we can isolate the given encounter
+
+				// if the enconteruniqueId is not null, we can isolate the given
+				// encounter
 
 				if (encounterUniqueId != null) {
 					Iterator<Encounter> i = encounterList.iterator();
@@ -319,29 +326,33 @@ public class RHEApatientController {
 							i.remove();
 					}
 				}
-				
-				if(enterpriseLocationIdentifier != null){
-					
-					getEncounterLog.setEnterpriseLocationId(enterpriseLocationIdentifier);
-					
+
+				if (enterpriseLocationIdentifier != null) {
+
+					getEncounterLog
+							.setEnterpriseLocationId(enterpriseLocationIdentifier);
+
 					Iterator<Encounter> i = encounterList.iterator();
 					while (i.hasNext()) {
 
-						String elidString = i.next().getLocation().getDescription();
+						String elidString = i.next().getLocation()
+								.getDescription();
 						String elid = null;
-						
-						if(elidString != null){
-						final Matcher matcher = Pattern.compile(":").matcher(elidString);
-						if(matcher.find()){						
-						    elid = elidString.substring(matcher.end()).trim();
-						}
-						if(elid != null){
-							if(elid.equals(enterpriseLocationIdentifier)){
-								i.remove();
+
+						if (elidString != null) {
+							final Matcher matcher = Pattern.compile(":")
+									.matcher(elidString);
+							if (matcher.find()) {
+								elid = elidString.substring(matcher.end())
+										.trim();
+							}
+							if (elid != null) {
+								if (elid.equals(enterpriseLocationIdentifier)) {
+									i.remove();
+								}
 							}
 						}
-						}
-					}		
+					}
 				}
 
 				log.info("Calling the ORU_R01 parser...");
@@ -357,15 +368,30 @@ public class RHEApatientController {
 				}
 
 				if (encounterList.size() > 0)
-					getEncounterLog.setResult(RequestOutcome.RESULTS_RETRIEVED.getResultType());
+					getEncounterLog.setResult(RequestOutcome.RESULTS_RETRIEVED
+							.getResultType());
 				if (encounterList.size() == 0) {
-					getEncounterLog.setResult(RequestOutcome.NO_RESULTS.getResultType()); // Terrible logging methods !
-		
-					getEncounterLog = util.getLogger(getEncounterLog, RHEAErrorCodes.INVALID_RESULTS, RHEAErrorCodes.INVALID_RESULTS_DETAIL, RequestOutcome.NO_RESULTS.getResultType(), fromDate, toDate, null);
+					getEncounterLog.setResult(RequestOutcome.NO_RESULTS
+							.getResultType()); // Terrible logging methods !
+
+					getEncounterLog = util.getLogger(getEncounterLog,
+							RHEAErrorCodes.INVALID_RESULTS,
+							RHEAErrorCodes.INVALID_RESULTS_DETAIL,
+							RequestOutcome.NO_RESULTS.getResultType(),
+							fromDate, toDate, null);
 					service.saveGetEncounterLog(getEncounterLog);
-					
-					response.setStatus(HttpServletResponse.SC_OK); //If no matching encounters were retrived, we display 200. OK. Is this correct ?
-								
+
+					response.setStatus(HttpServletResponse.SC_OK); // If no
+																	// matching
+																	// encounters
+																	// were
+																	// retrived,
+																	// we
+																	// display
+																	// 200. OK.
+																	// Is this
+																	// correct ?
+
 					return null;
 				}
 
@@ -377,16 +403,21 @@ public class RHEApatientController {
 					hl7Msg = R01Util.getMessage(r01);
 
 				} catch (Exception e) {
-					
-					getEncounterLog = util.getLogger(getEncounterLog, RequestOutcome.BAD_REQUEST.getResultType(), null, RequestOutcome.BAD_REQUEST.getResultType(), fromDate, toDate, e);
+
+					getEncounterLog = util.getLogger(getEncounterLog,
+							RequestOutcome.BAD_REQUEST.getResultType(), null,
+							RequestOutcome.BAD_REQUEST.getResultType(),
+							fromDate, toDate, e);
 					service.saveGetEncounterLog(getEncounterLog);
-					
+
 					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-					 try {
-					        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), e.toString());       
-					    } catch (Exception e2) {
-					        e2.printStackTrace();
-					    } 			
+					try {
+						xmlMessagewriter.parseMessage(response.getWriter(),
+								RequestOutcome.BAD_REQUEST.getResultType(),
+								e.toString());
+					} catch (Exception e2) {
+						e2.printStackTrace();
+					}
 					return null;
 				}
 				getEncounterLog.getMatchingEncounters().clear();
@@ -397,7 +428,7 @@ public class RHEApatientController {
 				response.getWriter().write(hl7Msg);
 				response.getWriter().flush();
 				response.getWriter().close();
-								
+
 				service.saveGetEncounterLog(getEncounterLog);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} catch (IOException e) {
@@ -418,7 +449,7 @@ public class RHEApatientController {
 		System.out.println("hl7 msg :" + hl7);
 		System.out.println("patientId :" + patientId);
 		System.out.println("notificationType :" + notificationType);
-		
+
 		log.info("RHEA HL7 Message Controller call detected...");
 		XmlMessageWriter xmlMessagewriter = new XmlMessageWriter();
 
@@ -426,7 +457,7 @@ public class RHEApatientController {
 		String source = null;
 		String sourceKey = null;
 		Encounter encounter = null;
-		
+
 		LogEncounterService service = Context
 				.getService(LogEncounterService.class);
 		System.out.println("notificationType :" + notificationType);
@@ -439,305 +470,344 @@ public class RHEApatientController {
 
 		if (!idType.equals("ECID")) {
 			log.info("Error : Invalid ID Type");
-			postEncounterLog = util.postLogger(postEncounterLog, RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.ID_TYPE_DETAIL);
+			postEncounterLog = util.postLogger(postEncounterLog,
+					RequestOutcome.BAD_REQUEST.getResultType(),
+					RHEAErrorCodes.ID_TYPE_DETAIL);
 			service.savePostEncounterLog(postEncounterLog);
-			
+
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			 try {
-			        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.ID_TYPE_DETAIL);
-			    } catch (Exception e) {
-			        e.printStackTrace();
-			    } 			
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						RHEAErrorCodes.ID_TYPE_DETAIL);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			return null;
 		}
-		
-		if(notificationType != null){
-		if (!notificationType.equals("BIR") && !notificationType.equals("MAT") && !notificationType.equals("RISK")) {
-			log.info("Error : Invalid notification type");
-			postEncounterLog = util.postLogger(postEncounterLog, RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.NOTIFICATION_TYPE_DETAIL);
-			service.savePostEncounterLog(postEncounterLog);
-			
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			 try {
-			        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), RHEAErrorCodes.NOTIFICATION_TYPE_DETAIL);
-			    } catch (Exception e) {
-			        e.printStackTrace();
-			    } 			
-			return null;
+
+		if (notificationType != null) {
+			if (!notificationType.equals("BIR")
+					&& !notificationType.equals("MAT")
+					&& !notificationType.equals("RISK")) {
+				log.info("Error : Invalid notification type");
+				postEncounterLog = util.postLogger(postEncounterLog,
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						RHEAErrorCodes.NOTIFICATION_TYPE_DETAIL);
+				service.savePostEncounterLog(postEncounterLog);
+
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+				try {
+					xmlMessagewriter.parseMessage(response.getWriter(),
+							RequestOutcome.BAD_REQUEST.getResultType(),
+							RHEAErrorCodes.NOTIFICATION_TYPE_DETAIL);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return null;
 			}
 		}
 
-		        SAXBuilder builder = new SAXBuilder();
-		        Document document = null;
-		        try {
-		            document = builder.build(
-		                    new ByteArrayInputStream(hl7.getBytes()));
-		            Element root = document.getRootElement();
-		 
-		            List rows = root.getChildren("MSH");
-		            Element child =(Element) document.getRootElement().getChildren().get(0);
-		            rows =  child.getChildren();
+		SAXBuilder builder = new SAXBuilder();
+		Document document = null;
+		try {
+			document = builder.build(new ByteArrayInputStream(hl7.getBytes()));
+			Element root = document.getRootElement();
 
-		            for (int i = 0; i < rows.size(); i++) {
-		            	Element row = (Element) rows.get(i);
-		            	if(row.getName().equals("MSH.10")){
-		            		sourceKey = row.getValue();
-		            	} 
-		            }
-		        } catch (JDOMException e) {
-		            e.printStackTrace();
-		        } catch (IOException e) {
-		            e.printStackTrace();
-		        }
+			List rows = root.getChildren("MSH");
+			Element child = (Element) document.getRootElement().getChildren()
+					.get(0);
+			rows = child.getChildren();
+
+			for (int i = 0; i < rows.size(); i++) {
+				Element row = (Element) rows.get(i);
+				if (row.getName().equals("MSH.10")) {
+					sourceKey = row.getValue();
+				}
+			}
+		} catch (JDOMException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		List<PatientIdentifierType> identifierTypeList = null;
-		
+
 		if (patientId != null) {
 			PatientIdentifierType patientIdentifierType = Context
 					.getPatientService().getPatientIdentifierTypeByName("ECID");
 
-			 identifierTypeList = new ArrayList<PatientIdentifierType>();
+			identifierTypeList = new ArrayList<PatientIdentifierType>();
 			identifierTypeList.add(patientIdentifierType);
 
 			List<Patient> patients = Context.getPatientService().getPatients(
 					null, patientId, identifierTypeList, false);
-			// I am not checking the identifier type here. Need to come back and add a check for this
+			// I am not checking the identifier type here. Need to come back and
+			// add a check for this
 			if (patients.size() == 1) {
 				patient = patients.get(0);
-				
-				PatientIdentifier identifier = patient.getPatientIdentifier("ECID");
+
+				PatientIdentifier identifier = patient
+						.getPatientIdentifier("ECID");
 				identifier.setPreferred(true);
-				Context.getPatientService().savePatient(patient);				
+				Context.getPatientService().savePatient(patient);
 			}
-	
+
 		}
 		if (patient == null) {
 			log.info("The specified patient was not found. A new patient wil be created..");
-					String givenName = null;
-					String familyName = null;
-					String birthDateString = null;
-					int year = 0;
-            		int month = 0;
-            		int day = 0;
-            		String nameSpace = "urn:hl7-org:v2xml";
-		            
-		            Element root = document.getRootElement();
-		            		            	
-		            Element pidRows = root.getChild("ORU_R01.PATIENT_RESULT", Namespace.getNamespace(nameSpace)).getChild("ORU_R01.PATIENT",Namespace.getNamespace(nameSpace)).getChild("PID", Namespace.getNamespace(nameSpace));
-		            
-		            List<Element> rows = pidRows.getChildren();
+			String givenName = null;
+			String familyName = null;
+			String birthDateString = null;
+			int year = 0;
+			int month = 0;
+			int day = 0;
+			String nameSpace = "urn:hl7-org:v2xml";
 
-		            for (int i = 0; i < rows.size(); i++) {
-		            	Element row = (Element) rows.get(i);
-		            	if(row.getName().equals("PID.5")){
-		            		givenName = row.getChild("XPN.1",Namespace.getNamespace(nameSpace)).getChild("FN.1",Namespace.getNamespace(nameSpace)).getValue().toString();
-		            		familyName = row.getChild("XPN.2", Namespace.getNamespace(nameSpace)).getValue().toString();
-		            	}if(row.getName().equals("PID.7")){
-		            		birthDateString = row.getChild("TS.1",Namespace.getNamespace(nameSpace)).getValue().toString();
-		            		year = Integer.parseInt(birthDateString.substring(0, 4));
-		            		month = Integer.parseInt(birthDateString.substring(4, 6));
-		            		day = Integer.parseInt(birthDateString.substring(6));          		
-		            	}
-		            }			
-			
+			Element root = document.getRootElement();
+
+			Element pidRows = root
+					.getChild("ORU_R01.PATIENT_RESULT",
+							Namespace.getNamespace(nameSpace))
+					.getChild("ORU_R01.PATIENT",
+							Namespace.getNamespace(nameSpace))
+					.getChild("PID", Namespace.getNamespace(nameSpace));
+
+			List<Element> rows = pidRows.getChildren();
+
+			for (int i = 0; i < rows.size(); i++) {
+				Element row = (Element) rows.get(i);
+				if (row.getName().equals("PID.5")) {
+					givenName = row
+							.getChild("XPN.1",
+									Namespace.getNamespace(nameSpace))
+							.getChild("FN.1", Namespace.getNamespace(nameSpace))
+							.getValue().toString();
+					familyName = row
+							.getChild("XPN.2",
+									Namespace.getNamespace(nameSpace))
+							.getValue().toString();
+				}
+				if (row.getName().equals("PID.7")) {
+					birthDateString = row
+							.getChild("TS.1", Namespace.getNamespace(nameSpace))
+							.getValue().toString();
+					year = Integer.parseInt(birthDateString.substring(0, 4));
+					month = Integer.parseInt(birthDateString.substring(4, 6));
+					day = Integer.parseInt(birthDateString.substring(6));
+				}
+			}
+
 			patient = new Patient();
-			
+
 			PersonName name = new PersonName();
 			name.setGivenName(givenName);
 			name.setFamilyName(familyName);
-			
+
 			patient.addName(name);
-			
+
 			PatientIdentifier identifier = new PatientIdentifier();
 			identifier.setIdentifier(patientId);
-			
-			PatientIdentifierType pIdType = Context.getPatientService().getPatientIdentifierTypeByName(idType);
-			if(pIdType == null){
+
+			PatientIdentifierType pIdType = Context.getPatientService()
+					.getPatientIdentifierTypeByName(idType);
+			if (pIdType == null) {
 				pIdType = new PatientIdentifierType();
 				pIdType.setName("ECID");
 				pIdType.setDescription("Enterprise ID");
 				pIdType.setRequired(false);
 				Context.getPatientService().savePatientIdentifierType(pIdType);
 			}
-			
 
-			identifier.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByName(idType));
+			identifier.setIdentifierType(Context.getPatientService()
+					.getPatientIdentifierTypeByName(idType));
 			identifier.setLocation(Context.getLocationService().getLocation(1));
 			identifier.setDateCreated(new Date());
 			identifier.setVoided(false);
 			identifier.setPreferred(true);
 			patient.addIdentifier(identifier);
 
-		    patient.setGender("N/A");
-		    
-		    Calendar cal = Calendar.getInstance();
-		    
-		    cal.set(Calendar.MONTH,month);
-		    cal.set(Calendar.DATE,day-1);
-		    cal.set(Calendar.YEAR,year);
-		    
-		    patient.setBirthdate(cal.getTime());
+			patient.setGender("N/A");
 
-		    //Save newly created patient into database
-			Context.getPatientService().savePatient(patient);	
-			
+			Calendar cal = Calendar.getInstance();
+
+			cal.set(Calendar.MONTH, month);
+			cal.set(Calendar.DATE, day - 1);
+			cal.set(Calendar.YEAR, year);
+
+			patient.setBirthdate(cal.getTime());
+
+			// Save newly created patient into database
+			Context.getPatientService().savePatient(patient);
+
 		}
-		
-			log.info("Source key : " + sourceKey);
-			//log.info("Source  : " + source);
-			log.info("data :" + hl7);
-			log.info("enterprise id :" + patientId);
 
-			// For RHEA, should the source be a single static entity ?
-			HL7Source hl7Source = Context.getHL7Service().getHL7SourceByName("LOCAL");			
-			
-				log.info("Creating HL7InQueue object...");
+		log.info("Source key : " + sourceKey);
+		// log.info("Source  : " + source);
+		log.info("data :" + hl7);
+		log.info("enterprise id :" + patientId);
 
-				HL7InQueue hl7InQueue = new HL7InQueue();
+		// For RHEA, should the source be a single static entity ?
+		HL7Source hl7Source = Context.getHL7Service().getHL7SourceByName(
+				"LOCAL");
 
-				hl7InQueue.setHL7Data(hl7);
-				log.info("hl7 message is : " + hl7.toString());
+		log.info("Creating HL7InQueue object...");
 
-				hl7InQueue.setHL7Source(hl7Source);
-				log.info("hl7 source is : " + hl7Source.toString());
+		HL7InQueue hl7InQueue = new HL7InQueue();
 
-				hl7InQueue.setHL7SourceKey(sourceKey);
-				log.info("hl7 source key is : " + sourceKey);
+		hl7InQueue.setHL7Data(hl7);
+		log.info("hl7 message is : " + hl7.toString());
 
-				Context.getHL7Service().saveHL7InQueue(hl7InQueue);
-				
-				String encId = null;
-				try {
-					// Call the processor method
-					if(notificationType == null){
-						encId = processHL7InQueue(hl7InQueue, patientId);
-					}else{
-						encId = processNotification(hl7InQueue, patientId);	
-					}
+		hl7InQueue.setHL7Source(hl7Source);
+		log.info("hl7 source is : " + hl7Source.toString());
 
-					postEncounterLog.setResult(RequestOutcome.CREATED
-							.getResultType());
-					postEncounterLog.setValid(true);
-					service.savePostEncounterLog(postEncounterLog);
-					
- 					response.setHeader("Location", request.getRequestURL() +"?enterpriseId="+patientId+"&idType="+idType+"&encounterId="+encId);
+		hl7InQueue.setHL7SourceKey(sourceKey);
+		log.info("hl7 source key is : " + sourceKey);
 
- 					encounter = Context.getEncounterService().getEncounter(Integer.parseInt(encId));
- 								
-					response.setStatus(HttpServletResponse.SC_CREATED);
-				} catch (HL7Exception e) {
-					e.printStackTrace();
-					StringWriter sw = new StringWriter();
-		            e.printStackTrace(new PrintWriter(sw));
-		            String stackTrace = sw.toString();
-		            
-					postEncounterLog = util.postLogger(postEncounterLog, RequestOutcome.BAD_REQUEST.getResultType(), stackTrace);
-					service.savePostEncounterLog(postEncounterLog);
-					
-					HL7InError error = new HL7InError(hl7InQueue);
-					error.setError("ERROR");
-					error.setErrorDetails(ExceptionUtils.getFullStackTrace(e));
-					Context.getHL7Service().saveHL7InError(error);
+		Context.getHL7Service().saveHL7InQueue(hl7InQueue);
 
-					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-					 try {
-					        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.BAD_REQUEST.getResultType(), e.toString());
-					        
-					    } catch (Exception e2) {
-					        e2.printStackTrace();
-					    } 			
+		String encId = null;
+		try {
+			// Call the processor method
+			if (notificationType == null) {
+				encId = processHL7InQueue(hl7InQueue, patientId);
+			} else {
+				encId = processNotification(hl7InQueue, patientId);
+			}
 
-					return null;
-				} catch (Exception e) {
-					e.printStackTrace();
-					StringWriter sw = new StringWriter();
-		            e.printStackTrace(new PrintWriter(sw));
-		            String stackTrace = sw.toString();
-		            
-					postEncounterLog = util.postLogger(postEncounterLog, RequestOutcome.BAD_REQUEST.getResultType(), stackTrace);
-					service.savePostEncounterLog(postEncounterLog);
-					
-					HL7InError error = new HL7InError(hl7InQueue);
-					error.setError("Exception");
-					error.setErrorDetails(ExceptionUtils.getFullStackTrace(e));
-					Context.getHL7Service().saveHL7InError(error);
+			postEncounterLog.setResult(RequestOutcome.CREATED.getResultType());
+			postEncounterLog.setValid(true);
+			service.savePostEncounterLog(postEncounterLog);
 
-					response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-					 try {
-					        xmlMessagewriter.parseMessage(response.getWriter(), RequestOutcome.SERVER_ERROR.getResultType(), e.toString());
-					        
-					    } catch (Exception e2) {
-					        e2.printStackTrace();
-					    } 			
+			response.setHeader("Location", request.getRequestURL()
+					+ "?enterpriseId=" + patientId + "&idType=" + idType
+					+ "&encounterId=" + encId);
 
-					return null;
-				}
-			
-		log.info("Returning persisted encounter to the ReferralAlerts module "+  encounter.getId());
+			encounter = Context.getEncounterService().getEncounter(
+					Integer.parseInt(encId));
+
+			response.setStatus(HttpServletResponse.SC_CREATED);
+		} catch (HL7Exception e) {
+			e.printStackTrace();
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			String stackTrace = sw.toString();
+
+			postEncounterLog = util.postLogger(postEncounterLog,
+					RequestOutcome.BAD_REQUEST.getResultType(), stackTrace);
+			service.savePostEncounterLog(postEncounterLog);
+
+			HL7InError error = new HL7InError(hl7InQueue);
+			error.setError("ERROR");
+			error.setErrorDetails(ExceptionUtils.getFullStackTrace(e));
+			Context.getHL7Service().saveHL7InError(error);
+
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.BAD_REQUEST.getResultType(),
+						e.toString());
+
+			} catch (Exception e2) {
+				e2.printStackTrace();
+			}
+
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			String stackTrace = sw.toString();
+
+			postEncounterLog = util.postLogger(postEncounterLog,
+					RequestOutcome.BAD_REQUEST.getResultType(), stackTrace);
+			service.savePostEncounterLog(postEncounterLog);
+
+			HL7InError error = new HL7InError(hl7InQueue);
+			error.setError("Exception");
+			error.setErrorDetails(ExceptionUtils.getFullStackTrace(e));
+			Context.getHL7Service().saveHL7InError(error);
+
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			try {
+				xmlMessagewriter.parseMessage(response.getWriter(),
+						RequestOutcome.SERVER_ERROR.getResultType(),
+						e.toString());
+
+			} catch (Exception e2) {
+				e2.printStackTrace();
+			}
+
+			return null;
+		}
+
+		log.info("Returning persisted encounter to the ReferralAlerts module "
+				+ encounter.getId());
 		return encounter;
 	}
 
 	public String processNotification(HL7InQueue hl7InQueue, String enterpriseId)
-		throws HL7Exception, Exception {
-			
-			log.info("Processing HL7 inbound queue (id="
-					+ hl7InQueue.getHL7InQueueId() + ",key="
-					+ hl7InQueue.getHL7SourceKey() + ")");
+			throws HL7Exception, Exception {
+
+		log.info("Processing HL7 inbound queue (id="
+				+ hl7InQueue.getHL7InQueueId() + ",key="
+				+ hl7InQueue.getHL7SourceKey() + ")");
 
 		// Parse the HL7 into an HL7Message or abort with failure
 		String hl7Message = hl7InQueue.getHL7Data();
 
 		// Send the inbound HL7 message to our receiver routine for processing
-			log.info("Sending HL7 message to HL7 receiver");
+		log.info("Sending HL7 message to HL7 receiver");
 
-		Message response = notificationReceiver.processMessage(hl7Message, enterpriseId);
+		Message response = notificationReceiver.processMessage(hl7Message,
+				enterpriseId);
 		System.out.println("res" + response);
 
 		// Move HL7 inbound queue entry into the archive before exiting
-			log.info("Archiving HL7 inbound queue entry");
+		log.info("Archiving HL7 inbound queue entry");
 		HL7InArchive hl7InArchive = new HL7InArchive(hl7InQueue);
 		Context.getHL7Service().saveHL7InArchive(hl7InArchive);
 
-			log.info("Removing HL7 message from inbound queue");
+		log.info("Removing HL7 message from inbound queue");
 		// NOTE : the purging of the HL7Queue is done in theOpenMRS Core
 		// (hl7serviceimpl class). DONT call it here.
 
 		// clean up memory after processing each queue entry (otherwise, the
 		// memory-intensive process may crash or eat up all our memory)
 		Context.getHL7Service().garbageCollect();
-		
+
 		return util.getEncounterId(response);
 	}
 
 	public String processHL7InQueue(HL7InQueue hl7InQueue, String enterpriseId)
 			throws HL7Exception, Exception {
-		
-			log.info("Processing HL7 inbound queue (id="
-					+ hl7InQueue.getHL7InQueueId() + ",key="
-					+ hl7InQueue.getHL7SourceKey() + ")");
+
+		log.info("Processing HL7 inbound queue (id="
+				+ hl7InQueue.getHL7InQueueId() + ",key="
+				+ hl7InQueue.getHL7SourceKey() + ")");
 
 		// Parse the HL7 into an HL7Message or abort with failure
 		String hl7Message = hl7InQueue.getHL7Data();
 
 		// Send the inbound HL7 message to our receiver routine for processing
-			log.info("Sending HL7 message to HL7 receiver");
+		log.info("Sending HL7 message to HL7 receiver");
 
 		Message response = receiver.processMessage(hl7Message, enterpriseId);
 
 		// Move HL7 inbound queue entry into the archive before exiting
-			log.info("Archiving HL7 inbound queue entry");
+		log.info("Archiving HL7 inbound queue entry");
 		HL7InArchive hl7InArchive = new HL7InArchive(hl7InQueue);
 		Context.getHL7Service().saveHL7InArchive(hl7InArchive);
 
-			log.info("Removing HL7 message from inbound queue");
+		log.info("Removing HL7 message from inbound queue");
 		// NOTE : the purging of the HL7Queue is done in theOpenMRS Core
 		// (hl7serviceimpl class). DONT call it here.
 
 		// clean up memory after processing each queue entry (otherwise, the
 		// memory-intensive process may crash or eat up all our memory)
 		Context.getHL7Service().garbageCollect();
-		
+
 		return util.getEncounterId(response);
-	}	
-	
+	}
+
 }
