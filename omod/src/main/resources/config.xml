@@ -68,6 +68,7 @@
 		PatientMergeRecord.hbm.xml
 		PatientRestoreRecord.hbm.xml
 		MergedDataObject.hbm.xml	
+		RestoredDataObject.hbm.xml
 	</mappingFiles>
 
 	<!-- Internationalization -->

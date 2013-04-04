@@ -35,20 +35,20 @@ private Integer restoreRecordId;
 
 	private String status;
 	
-	private SortedSet<MergedDataObject> mergedDataObjects;
+	private SortedSet<RestoredDataObject> restoredDataObjects;
 	
-    public Set<MergedDataObject> getMergedDataObjects() {
-		if (mergedDataObjects == null)
-			mergedDataObjects = new TreeSet<MergedDataObject>();
-        return mergedDataObjects;
+    public Set<RestoredDataObject> getRestoredDataObjects() {
+		if (restoredDataObjects == null)
+			restoredDataObjects = new TreeSet<RestoredDataObject>();
+        return restoredDataObjects;
     }
     
-	public void setMergedDataObjects(Set<MergedDataObject> mergedDataObjects) {
-		if (this.mergedDataObjects == null) {
-			this.mergedDataObjects = (SortedSet<MergedDataObject>) mergedDataObjects;
+	public void setRestoredDataObjects(Set<RestoredDataObject> mergedDataObjects) {
+		if (this.restoredDataObjects == null) {
+			this.restoredDataObjects = (SortedSet<RestoredDataObject>) mergedDataObjects;
 		} else {
-			this.mergedDataObjects.retainAll(mergedDataObjects);
-			this.mergedDataObjects.addAll(mergedDataObjects);
+			this.restoredDataObjects.retainAll(mergedDataObjects);
+			this.restoredDataObjects.addAll(mergedDataObjects);
 		}
 	}
 	

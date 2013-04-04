@@ -23,6 +23,7 @@ import org.openmrs.module.rheashradapter.hibernate.PatientMergeDAO;
 import org.openmrs.module.rheashradapter.model.MergedDataObject;
 import org.openmrs.module.rheashradapter.model.PatientMergeRecord;
 import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
+import org.openmrs.module.rheashradapter.model.RestoredDataObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class PatientMergeServiceImpl implements PatientMergeService {
@@ -231,12 +232,18 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			
 			mergedDataObjects = (SortedSet)patientMergeRecord.getMergedDataObjects();
 			
-			SortedSet<MergedDataObject> newEncounterDataObjects = new TreeSet<MergedDataObject>();
+			SortedSet<RestoredDataObject> newEncounterDataObjects = new TreeSet<RestoredDataObject>();
 			Iterator iterator = mergedDataObjects.iterator();
+			
 			while (iterator.hasNext()){
-				MergedDataObject mergedDataObject = new MergedDataObject();
-				mergedDataObject = (MergedDataObject) iterator.next();
-				newEncounterDataObjects.add(mergedDataObject);
+				RestoredDataObject restoredDataObject = new RestoredDataObject();
+				MergedDataObject mergedDataObject = (MergedDataObject) iterator.next();
+				
+				restoredDataObject.setEncounterId(mergedDataObject.getEncounterId());
+				restoredDataObject.setObsId(mergedDataObject.getObsId());
+				restoredDataObject.setPatientRestoreRecord(patientRestoreRecord);
+				
+				newEncounterDataObjects.add(restoredDataObject);
 			}
 			
 			Patient p = patientMergeDAO.getRetiredPatient(patientMergeRecord
@@ -298,7 +305,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 				}
 			}
 			
-			patientRestoreRecord.setMergedDataObjects(newEncounterDataObjects);
+			patientRestoreRecord.setRestoredDataObjects(newEncounterDataObjects);
 			patientRestoreRecord.setStatus("success");
 			patientRestoreRecord.setUserId(Context.getAuthenticatedUser().getUserId());
 			patientMergeDAO.savePatientRestore(patientRestoreRecord);
