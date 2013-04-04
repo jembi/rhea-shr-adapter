@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd" >
+
+<hibernate-mapping>
+
+	<class name="org.openmrs.module.rheashradapter.model.RestoredDataObject" table="rheashradapter_restored_data_object">
+
+		<id name="restoredDataObjectId" type="int" column="restored_data_object_id" 
+			unsaved-value="0">
+				<generator class="identity" />
+		</id>
+
+		<discriminator column="restored_data_object_id" insert="false" />
+		
+		<property name="encounterId" type="java.lang.Integer" 
+			column="encounter_id" not-null="false" length="10" />
+			
+					<property name="obsId" type="java.lang.Integer" 
+			column="obs_id" not-null="false" length="10" />
+		
+		<many-to-one name="patientRestoreRecord" class="org.openmrs.module.rheashradapter.model.PatientRestoreRecord" not-null="true">
+			<column name="restore_record_id" />
+		</many-to-one>
+		
+	</class>
+</hibernate-mapping>

@@ -20,9 +20,10 @@ import org.openmrs.Person;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.rheashradapter.hibernate.LogEncounterDAO;
 import org.openmrs.module.rheashradapter.hibernate.PatientMergeDAO;
-import org.openmrs.module.rheashradapter.model.EncounterDataObject;
+import org.openmrs.module.rheashradapter.model.MergedDataObject;
 import org.openmrs.module.rheashradapter.model.PatientMergeRecord;
 import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
+import org.openmrs.module.rheashradapter.model.RestoredDataObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class PatientMergeServiceImpl implements PatientMergeService {
@@ -68,7 +69,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientMergeRecord
 					.setUserId(Context.getAuthenticatedUser().getId());
 
-			SortedSet<EncounterDataObject> encounterDataObjects = new TreeSet<EncounterDataObject>();
+			SortedSet<MergedDataObject> mergedDataObjects = new TreeSet<MergedDataObject>();
 
 			PatientIdentifierType identifierType = Context.getPatientService()
 					.getPatientIdentifierTypeByName(patientIdentifierType);
@@ -136,12 +137,12 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 						o.setComment("Merged with patient"
 								+ mainPatient.getId());
 
-						EncounterDataObject encounterDataObject = new EncounterDataObject();
-						encounterDataObject.setEncounterId(e.getEncounterId());
-						encounterDataObject.setObsId(o.getId());
-						encounterDataObject
+						MergedDataObject mergedDataObject = new MergedDataObject();
+						mergedDataObject.setEncounterId(e.getEncounterId());
+						mergedDataObject.setObsId(o.getId());
+						mergedDataObject
 								.setPatientMergeRecord(patientMergeRecord);
-						encounterDataObjects.add(encounterDataObject);
+						mergedDataObjects.add(mergedDataObject);
 
 						Obs ao = Context.getObsService().saveObs(o,
 								"Merged with patient");
@@ -164,12 +165,12 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 					Context.getObsService().saveObs(o, "Merged with patient");
 					getSessionFactory().getCurrentSession().evict(o);
 
-					EncounterDataObject encounterDataObject = new EncounterDataObject();
+					MergedDataObject mergedDataObject = new MergedDataObject();
 
-					encounterDataObject
+					mergedDataObject
 							.setPatientMergeRecord(patientMergeRecord);
-					encounterDataObject.setObsId(o.getId());
-					encounterDataObjects.add(encounterDataObject);
+					mergedDataObject.setObsId(o.getId());
+					mergedDataObjects.add(mergedDataObject);
 
 				}
 			}
@@ -177,7 +178,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			Context.getPatientService().voidPatient(duplicatePatient,
 					"Merged with patient " + mainPatient.getId());
 
-			patientMergeRecord.setEncounterDataObjects(encounterDataObjects);
+			patientMergeRecord.setMergedDataObjects(mergedDataObjects);
 
 			patientMergeRecord.setStatus("success");
 			patientMergeDAO.savePatientMergeRecord(patientMergeRecord);
@@ -227,16 +228,22 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientRestoreRecord.setLogTime(new Date());
 			PatientMergeRecord patientMergeRecord = patientMergeDAO
 					.getPatientMergeRecord(restorePatient);
-			SortedSet<EncounterDataObject> encounterDataObjects = new TreeSet<EncounterDataObject>();
+			SortedSet<MergedDataObject> mergedDataObjects = new TreeSet<MergedDataObject>();
 			
-			encounterDataObjects = (SortedSet)patientMergeRecord.getEncounterDataObjects();
+			mergedDataObjects = (SortedSet)patientMergeRecord.getMergedDataObjects();
 			
-			SortedSet<EncounterDataObject> newEncounterDataObjects = new TreeSet<EncounterDataObject>();
-			Iterator iterator = encounterDataObjects.iterator();
+			SortedSet<RestoredDataObject> newEncounterDataObjects = new TreeSet<RestoredDataObject>();
+			Iterator iterator = mergedDataObjects.iterator();
+			
 			while (iterator.hasNext()){
-				EncounterDataObject encounterDataObject = new EncounterDataObject();
-				encounterDataObject = (EncounterDataObject) iterator.next();
-				newEncounterDataObjects.add(encounterDataObject);
+				RestoredDataObject restoredDataObject = new RestoredDataObject();
+				MergedDataObject mergedDataObject = (MergedDataObject) iterator.next();
+				
+				restoredDataObject.setEncounterId(mergedDataObject.getEncounterId());
+				restoredDataObject.setObsId(mergedDataObject.getObsId());
+				restoredDataObject.setPatientRestoreRecord(patientRestoreRecord);
+				
+				newEncounterDataObjects.add(restoredDataObject);
 			}
 			
 			Patient p = patientMergeDAO.getRetiredPatient(patientMergeRecord
@@ -251,13 +258,13 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			Context.getPatientService().unvoidPatient(restoredPatient);
 			Set encounters = new HashSet();
 			
-			for (EncounterDataObject encounterDataObject : patientMergeRecord
-					.getEncounterDataObjects()) {
+			for (MergedDataObject mergedDataObject : patientMergeRecord
+					.getMergedDataObjects()) {
 				Obs obs = null;
-				if (encounterDataObject.getEncounterId() != null) {
-					encounters.add((int) encounterDataObject.getEncounterId());
+				if (mergedDataObject.getEncounterId() != null) {
+					encounters.add((int) mergedDataObject.getEncounterId());
 				} else {
-					int obsId = encounterDataObject.getObsId();
+					int obsId = mergedDataObject.getObsId();
 					obs = Context.getObsService().getObs(obsId);
 
 					obs.setPatient(restoredPatient);
@@ -298,7 +305,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 				}
 			}
 			
-			patientRestoreRecord.setEncounterDataObjects(newEncounterDataObjects);
+			patientRestoreRecord.setRestoredDataObjects(newEncounterDataObjects);
 			patientRestoreRecord.setStatus("success");
 			patientRestoreRecord.setUserId(Context.getAuthenticatedUser().getUserId());
 			patientMergeDAO.savePatientRestore(patientRestoreRecord);
