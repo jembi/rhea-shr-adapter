@@ -35,20 +35,20 @@ private Integer restoreRecordId;
 
 	private String status;
 	
-	private SortedSet<EncounterDataObject> encounterDataObjects;
+	private SortedSet<MergedDataObject> mergedDataObjects;
 	
-    public Set<EncounterDataObject> getEncounterDataObjects() {
-		if (encounterDataObjects == null)
-			encounterDataObjects = new TreeSet<EncounterDataObject>();
-        return encounterDataObjects;
+    public Set<MergedDataObject> getMergedDataObjects() {
+		if (mergedDataObjects == null)
+			mergedDataObjects = new TreeSet<MergedDataObject>();
+        return mergedDataObjects;
     }
     
-	public void setEncounterDataObjects(Set<EncounterDataObject> encounterDataObjects) {
-		if (this.encounterDataObjects == null) {
-			this.encounterDataObjects = (SortedSet<EncounterDataObject>) encounterDataObjects;
+	public void setMergedDataObjects(Set<MergedDataObject> mergedDataObjects) {
+		if (this.mergedDataObjects == null) {
+			this.mergedDataObjects = (SortedSet<MergedDataObject>) mergedDataObjects;
 		} else {
-			this.encounterDataObjects.retainAll(encounterDataObjects);
-			this.encounterDataObjects.addAll(encounterDataObjects);
+			this.mergedDataObjects.retainAll(mergedDataObjects);
+			this.mergedDataObjects.addAll(mergedDataObjects);
 		}
 	}
 	

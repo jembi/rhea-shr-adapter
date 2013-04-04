@@ -5,14 +5,14 @@
 
 <hibernate-mapping>
 
-	<class name="org.openmrs.module.rheashradapter.model.EncounterDataObject" table="rheashradapter_encounter_data_object">
+	<class name="org.openmrs.module.rheashradapter.model.MergedDataObject" table="rheashradapter_merged_data_object">
 
-		<id name="encounterDataObjectId" type="int" column="encounter_data_object_id" 
+		<id name="mergedDataObjectId" type="int" column="merged_data_object_id" 
 			unsaved-value="0">
 				<generator class="identity" />
 		</id>
 
-		<discriminator column="encounter_data_object_id" insert="false" />
+		<discriminator column="merged_data_object_id" insert="false" />
 		
 		<property name="encounterId" type="java.lang.Integer" 
 			column="encounter_id" not-null="false" length="10" />

@@ -67,7 +67,7 @@
 		MatchingEncounters.hbm.xml	
 		PatientMergeRecord.hbm.xml
 		PatientRestoreRecord.hbm.xml
-		EncounterDataObject.hbm.xml	
+		MergedDataObject.hbm.xml	
 	</mappingFiles>
 
 	<!-- Internationalization -->
