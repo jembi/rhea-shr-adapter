@@ -58,7 +58,6 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 
 	public String mergePatient(String patientIdentifierType,
 			String survivingPatient, String retiringPatient) {
-
 		PatientMergeRecord patientMergeRecord = new PatientMergeRecord();
 
 		try {
@@ -75,13 +74,10 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 					.getPatientIdentifierTypeByName(patientIdentifierType);
 			List<PatientIdentifierType> identifiers = new ArrayList<PatientIdentifierType>();
 			identifiers.add(identifierType);
-
 			List<Patient> patientsToKeep = Context.getPatientService()
 					.getPatients(null, survivingPatient, identifiers, false);
-
 			List<Patient> patientsToRetire = Context.getPatientService()
 					.getPatients(null, retiringPatient, identifiers, false);
-
 			if (patientsToKeep == null) {
 				return "404";
 			}
@@ -89,9 +85,18 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 				return "404";
 			}
 
-			Patient mainPatient = patientsToKeep.get(0);
-			Patient duplicatePatient = patientsToRetire.get(0);
+			Patient mainPatient = null;
+			Patient duplicatePatient = null;
 
+			if(!patientsToKeep.isEmpty())
+				mainPatient = patientsToKeep.get(0);
+			else
+				return "404";
+			if(!patientsToRetire.isEmpty())
+			    duplicatePatient = patientsToRetire.get(0);
+			else
+				return "404";
+			
 			patientMergeRecord.setSurvivingPatient(mainPatient.getPatientId());
 			patientMergeRecord.setRetiredPatient(duplicatePatient
 					.getPatientId());
@@ -178,6 +183,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientMergeDAO.savePatientMergeRecord(patientMergeRecord);
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			patientMergeRecord.setStatus("error");
 			patientMergeDAO.savePatientMergeRecord(patientMergeRecord);
 		}
@@ -215,20 +221,24 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 	@Override
 	public String restorePatient(String patientIdentifierType,
 			String restorePatient) {
-		
 		PatientRestoreRecord patientRestoreRecord = new PatientRestoreRecord();
 		try {
-
 			patientRestoreRecord.setRetiredPatientId(restorePatient);
 			patientRestoreRecord.setLogTime(new Date());
-		
 			PatientMergeRecord patientMergeRecord = patientMergeDAO
 					.getPatientMergeRecord(restorePatient);
-			
 			SortedSet<EncounterDataObject> encounterDataObjects = new TreeSet<EncounterDataObject>();
 			
 			encounterDataObjects = (SortedSet)patientMergeRecord.getEncounterDataObjects();
-
+			
+			SortedSet<EncounterDataObject> newEncounterDataObjects = new TreeSet<EncounterDataObject>();
+			Iterator iterator = encounterDataObjects.iterator();
+			while (iterator.hasNext()){
+				EncounterDataObject encounterDataObject = new EncounterDataObject();
+				encounterDataObject = (EncounterDataObject) iterator.next();
+				newEncounterDataObjects.add(encounterDataObject);
+			}
+			
 			Patient p = patientMergeDAO.getRetiredPatient(patientMergeRecord
 					.getRetiredPatient());
 			
@@ -237,7 +247,6 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			}else{
 				patientRestoreRecord.setRetiredPatient(p.getPatientId());
 			}
-			
 			Patient restoredPatient = p;
 			Context.getPatientService().unvoidPatient(restoredPatient);
 			Set encounters = new HashSet();
@@ -289,7 +298,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 				}
 			}
 			
-			patientRestoreRecord.setEncounterDataObjects(encounterDataObjects);
+			patientRestoreRecord.setEncounterDataObjects(newEncounterDataObjects);
 			patientRestoreRecord.setStatus("success");
 			patientRestoreRecord.setUserId(Context.getAuthenticatedUser().getUserId());
 			patientMergeDAO.savePatientRestore(patientRestoreRecord);
