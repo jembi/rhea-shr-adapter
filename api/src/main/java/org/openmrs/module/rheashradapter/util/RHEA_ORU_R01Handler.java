@@ -351,7 +351,8 @@ public class RHEA_ORU_R01Handler implements Application {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
+	   if(omrsCX != null) {
 	   PatientIdentifierType pidType = Context.getPatientService().getPatientIdentifierTypeByName(omrsCX.getIdentifierTypeCode().getValue());
 	   if(pidType == null) {
 		   pidType = new PatientIdentifierType();
@@ -371,6 +372,7 @@ public class RHEA_ORU_R01Handler implements Application {
 		patient.addIdentifier(identifier);
 		
 		Context.getPatientService().savePatient(patient);
+	   }
 		
 	}
 
