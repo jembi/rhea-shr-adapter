@@ -59,6 +59,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 
 	public String mergePatient(String patientIdentifierType,
 			String survivingPatient, String retiringPatient) {
+		
 		PatientMergeRecord patientMergeRecord = new PatientMergeRecord();
 
 		try {
@@ -68,6 +69,10 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientMergeRecord.setLogTime(new Date());
 			patientMergeRecord
 					.setUserId(Context.getAuthenticatedUser().getId());
+			
+			if(patientMergeDAO.validateRequest(survivingPatient, retiringPatient)){
+				return "200";
+			}
 
 			SortedSet<MergedDataObject> mergedDataObjects = new TreeSet<MergedDataObject>();
 

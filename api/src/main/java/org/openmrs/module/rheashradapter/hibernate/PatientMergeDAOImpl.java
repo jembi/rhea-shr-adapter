@@ -94,13 +94,11 @@ public class PatientMergeDAOImpl implements PatientMergeDAO {
 	
 	@Override
 	public List<MergedDataObject> getMergedDataObjects(int id) {
-System.out.println("D");
 List<MergedDataObject> candidates = new ArrayList<MergedDataObject>();
-System.out.println("D");	
 		Query query = sessionFactory
 				.getCurrentSession()
 				.createQuery(
-						"select p from MergedDataObject p where p.patientMergeRecord.mergeRecordId = :attr_id");
+						"select p from MergedDataObject p where p.mergedDataObjectId = :attr_id");
 		query.setParameter("attr_id", id);
 
 		if (query.list() != null) {
@@ -112,9 +110,29 @@ System.out.println("D");
 		} else {
 			return null;
 		}
-		return null;
+		return null;		
+	}
+	
+	@Override
+	public boolean validateRequest(String survivingPatient, String retiringPatient) {
+		List<PatientMergeRecord> patientMergeRecords = new ArrayList<PatientMergeRecord>();
+		Query query = sessionFactory
+				.getCurrentSession()
+				.createQuery(
+						"select p from PatientMergeRecord p where p.survivingPatientId = :idOne AND p.survivingPatientId = :idTwo");
+		query.setParameter("idOne", survivingPatient);
+		query.setParameter("idTwo", retiringPatient);
 
-		
+		if (query.list() != null) {
+
+			patientMergeRecords = (List<PatientMergeRecord>) query.list();
+			if (patientMergeRecords.size() == 1) {
+				return true;
+			}
+		} else {
+			return false;
+		}
+		return false;	
 	}
 	
 }
