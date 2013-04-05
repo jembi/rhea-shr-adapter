@@ -98,7 +98,7 @@ List<MergedDataObject> candidates = new ArrayList<MergedDataObject>();
 		Query query = sessionFactory
 				.getCurrentSession()
 				.createQuery(
-						"select p from MergedDataObject p where p.mergedDataObjectId = :attr_id");
+						"select p from MergedDataObject p where p.patientMergeRecord.mergeRecordId = :attr_id");
 		query.setParameter("attr_id", id);
 
 		if (query.list() != null) {
