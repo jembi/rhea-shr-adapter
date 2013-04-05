@@ -19,6 +19,8 @@ public interface PatientMergeDAO {
 	public Patient getRetiredPatient(int patientId);
 
 	List<MergedDataObject> getMergedDataObjects(int id);
+
+	public boolean validateRequest(String survivingPatient, String retiringPatient);
 	
 	
 }
