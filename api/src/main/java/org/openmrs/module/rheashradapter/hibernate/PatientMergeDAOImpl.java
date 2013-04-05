@@ -8,6 +8,7 @@ import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Restrictions;
 import org.openmrs.Patient;
+import org.openmrs.module.rheashradapter.model.MergedDataObject;
 import org.openmrs.module.rheashradapter.model.PatientMergeRecord;
 import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +88,31 @@ public class PatientMergeDAOImpl implements PatientMergeDAO {
 	@Override
 	public void savePatientRestore(PatientRestoreRecord patientRestoreRecord) {
 		this.getSessionFactory().getCurrentSession().saveOrUpdate(patientRestoreRecord);
+
+		
+	}
+	
+	@Override
+	public List<MergedDataObject> getMergedDataObjects(int id) {
+System.out.println("D");
+List<MergedDataObject> candidates = new ArrayList<MergedDataObject>();
+System.out.println("D");	
+		Query query = sessionFactory
+				.getCurrentSession()
+				.createQuery(
+						"select p from MergedDataObject p where p.patientMergeRecord.mergeRecordId = :attr_id");
+		query.setParameter("attr_id", id);
+
+		if (query.list() != null) {
+
+			candidates = (List<MergedDataObject>) query.list();
+			if (candidates.size() != 0) {
+				return candidates;
+			}
+		} else {
+			return null;
+		}
+		return null;
 
 		
 	}

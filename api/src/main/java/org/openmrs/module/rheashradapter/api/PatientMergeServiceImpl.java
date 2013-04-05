@@ -228,17 +228,12 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			patientRestoreRecord.setLogTime(new Date());
 			PatientMergeRecord patientMergeRecord = patientMergeDAO
 					.getPatientMergeRecord(restorePatient);
-			SortedSet<MergedDataObject> mergedDataObjects = new TreeSet<MergedDataObject>();
+			List<MergedDataObject> mergedDataObjects = patientMergeDAO.getMergedDataObjects(patientMergeRecord.getMergeRecordId());
 			
-			mergedDataObjects = (SortedSet)patientMergeRecord.getMergedDataObjects();
+			Set<RestoredDataObject> newEncounterDataObjects = new TreeSet<RestoredDataObject>();
 			
-			SortedSet<RestoredDataObject> newEncounterDataObjects = new TreeSet<RestoredDataObject>();
-			Iterator iterator = mergedDataObjects.iterator();
-			
-			while (iterator.hasNext()){
+			for (MergedDataObject mergedDataObject : mergedDataObjects){
 				RestoredDataObject restoredDataObject = new RestoredDataObject();
-				MergedDataObject mergedDataObject = (MergedDataObject) iterator.next();
-				
 				restoredDataObject.setEncounterId(mergedDataObject.getEncounterId());
 				restoredDataObject.setObsId(mergedDataObject.getObsId());
 				restoredDataObject.setPatientRestoreRecord(patientRestoreRecord);
@@ -258,8 +253,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 			Context.getPatientService().unvoidPatient(restoredPatient);
 			Set encounters = new HashSet();
 			
-			for (MergedDataObject mergedDataObject : patientMergeRecord
-					.getMergedDataObjects()) {
+			for (MergedDataObject mergedDataObject : mergedDataObjects) {
 				Obs obs = null;
 				if (mergedDataObject.getEncounterId() != null) {
 					encounters.add((int) mergedDataObject.getEncounterId());
@@ -304,6 +298,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 
 				}
 			}
+			
 			
 			patientRestoreRecord.setRestoredDataObjects(newEncounterDataObjects);
 			patientRestoreRecord.setStatus("success");

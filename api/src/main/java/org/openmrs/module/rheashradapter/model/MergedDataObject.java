@@ -44,6 +44,7 @@ public class MergedDataObject implements Comparable<MergedDataObject> {
 
 	@Override
 	public int compareTo(MergedDataObject o) {
+		System.out.println("rrrrr");
 		return obsId.compareTo(o.getObsId());
 	}
 	
