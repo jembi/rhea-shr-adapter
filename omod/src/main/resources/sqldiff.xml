@@ -138,6 +138,16 @@ CREATE TABLE  `rheashradapter_get_encounter_log` (
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		</sql>
 	</diff>
-
+	<diff>
+		<version>1.0.5</version>
+		<author>suranga</author>
+		<date>April 16th, 2013</date>
+		<description>
+			Add index on the `code` column of the `concept_reference_term` table
+		</description>
+		<sql>
+			ALTER TABLE `concept_reference_term` ADD INDEX (`code`);
+		</sql>
+	</diff>
 
 </sqldiff>
