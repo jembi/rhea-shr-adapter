@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd" >
+
+<hibernate-mapping>
+
+	<class name="org.openmrs.module.rheashradapter.model.PatientMergeLog" table="rheashradapter_patient_merge_log">
+
+	<id name="patientMergeLogId" type="int" column="patient_merge_log_id"
+	unsaved-value="0">
+				<generator class="identity" />
+		</id>
+
+	<discriminator column="patient_merge_log_id" insert="false" />
+	
+			<property name="retiredPatient" type="java.lang.String" 
+			column="retired_patient" not-null="false" length="40" />
+			
+					<property name="survivingPatient" type="java.lang.String" 
+			column="surviving_patient" not-null="false" length="40" />
+	
+		<many-to-one name="winner" class="org.openmrs.Patient" column="winner"
+			not-null="true" />
+
+		<many-to-one name="looser" class="org.openmrs.Patient" column="looser"
+			not-null="true" />
+
+		<property name="serializedMergedData" type="materialized_clob" column="merged_data"
+			not-null="true" />
+			
+		<property name="flag" type="java.lang.Boolean" column="flag"/>
+
+		<property name="createdDate" type="java.util.Date" column="created_date" not-null="true" />
+		
+		<property name="restoredDate" type="java.util.Date" column="restored_date" not-null="false" />
+		
+		<property name="createdUserId" type="int" column="created_user_id" not-null="true" />
+		
+		<property name="restoredUserId" type="int" column="restored_user_id" not-null="false" />
+				
+
+	</class>
+</hibernate-mapping>

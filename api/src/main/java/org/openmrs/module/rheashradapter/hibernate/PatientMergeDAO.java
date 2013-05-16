@@ -3,19 +3,22 @@ package org.openmrs.module.rheashradapter.hibernate;
 import java.util.List;
 
 import org.openmrs.Patient;
+import org.openmrs.PatientIdentifier;
+import org.openmrs.api.APIException;
 import org.openmrs.module.rheashradapter.model.GetEncounterLog;
 import org.openmrs.module.rheashradapter.model.MergedDataObject;
-import org.openmrs.module.rheashradapter.model.PatientMergeRecord;
+import org.openmrs.module.rheashradapter.model.PatientMergeLog;
 import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
+import org.openmrs.serialization.SerializationException;
 
 public interface PatientMergeDAO {
 
-	public void savePatientMergeRecord(PatientMergeRecord patientMergeRecord);
+	public void savePatientMergeLog(PatientMergeLog personMergeLog) throws SerializationException, APIException;
 	
 	void savePatientRestore(PatientRestoreRecord patientRestoreRecord);
 	
-	public PatientMergeRecord getPatientMergeRecord(String retiredPatient);
-	
+	public PatientMergeLog getPatientMergeLog(String retiredPatient);
+		
 	public Patient getRetiredPatient(int patientId);
 
 	List<MergedDataObject> getMergedDataObjects(int id);

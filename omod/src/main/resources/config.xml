@@ -65,9 +65,9 @@
 		PostEncounterLog.hbm.xml
 		GetEncounterLog.hbm.xml
 		MatchingEncounters.hbm.xml	
-		PatientMergeRecord.hbm.xml
+		<!-- PatientMergeRecord.hbm.xml -->
 		PatientRestoreRecord.hbm.xml
-		MergedDataObject.hbm.xml	
+		PatientMergeLog.hbm.xml
 		RestoredDataObject.hbm.xml
 	</mappingFiles>
 
