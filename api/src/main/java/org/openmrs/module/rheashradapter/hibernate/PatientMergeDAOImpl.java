@@ -8,9 +8,14 @@ import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Restrictions;
 import org.openmrs.Patient;
+import org.openmrs.PatientIdentifier;
+import org.openmrs.api.APIException;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.rheashradapter.model.MergedDataObject;
-import org.openmrs.module.rheashradapter.model.PatientMergeRecord;
+import org.openmrs.module.rheashradapter.model.PatientMergeLog;
 import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
+import org.openmrs.person.PersonMergeLog;
+import org.openmrs.serialization.SerializationException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class PatientMergeDAOImpl implements PatientMergeDAO {
@@ -46,12 +51,6 @@ public class PatientMergeDAOImpl implements PatientMergeDAO {
 	}
 
 
-	public void savePatientMergeRecord(PatientMergeRecord patientMergeRecord) {
-		this.getSessionFactory().getCurrentSession().saveOrUpdate(patientMergeRecord);
-		
-	}
-	
-
 	
 	public Patient getRetiredPatient(int patientId){
 		
@@ -78,11 +77,10 @@ public class PatientMergeDAOImpl implements PatientMergeDAO {
 	}
 	
 	@Override
-	public PatientMergeRecord getPatientMergeRecord(String retiredPatient) {
-		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(PatientMergeRecord.class)
-			    .add(Restrictions.eq("retiredPatientId", retiredPatient));
-		
-		return (PatientMergeRecord) criteria.list().get(0);
+	public PatientMergeLog getPatientMergeLog(String retiredPatient) {
+		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(PatientMergeLog.class)
+			    .add(Restrictions.eq("retiredPatient", retiredPatient));		
+		return (PatientMergeLog) criteria.list().get(0);
 	}
 
 	@Override
@@ -115,17 +113,17 @@ List<MergedDataObject> candidates = new ArrayList<MergedDataObject>();
 	
 	@Override
 	public boolean validateRequest(String survivingPatient, String retiringPatient) {
-		List<PatientMergeRecord> patientMergeRecords = new ArrayList<PatientMergeRecord>();
+		List<PatientMergeLog> patientMergeRecords = new ArrayList<PatientMergeLog>();
 		Query query = sessionFactory
 				.getCurrentSession()
 				.createQuery(
-						"select p from PatientMergeRecord p where p.survivingPatientId = :idOne AND p.survivingPatientId = :idTwo");
+						"select p from PatientMergeLog p where p.survivingPatientId = :idOne AND p.survivingPatientId = :idTwo");
 		query.setParameter("idOne", survivingPatient);
 		query.setParameter("idTwo", retiringPatient);
 
 		if (query.list() != null) {
 
-			patientMergeRecords = (List<PatientMergeRecord>) query.list();
+			patientMergeRecords = (List<PatientMergeLog>) query.list();
 			if (patientMergeRecords.size() == 1) {
 				return true;
 			}
@@ -134,5 +132,25 @@ List<MergedDataObject> candidates = new ArrayList<MergedDataObject>();
 		}
 		return false;	
 	}
+
+	@Override
+	public void savePatientMergeLog(PatientMergeLog patientMergeLog) throws SerializationException, APIException {
+		//verify required fields
+		if (Context.getSerializationService().getDefaultSerializer() == null)
+			throw new APIException(
+			        "A default serializer was not found. Cannot proceed without at least one installed serializer");
+		/*log.debug("Auditing merging of non-preferred person " + patientMergeLog.getLooser().getUuid()
+		        + " with preferred person " + patientMergeLog.getWinner().getId());*/
+		//populate the mergedData XML from the PersonMergeLogData object
+		String serialized = Context.getSerializationService().getDefaultSerializer().serialize(
+				patientMergeLog.getPersonMergeLogData());
+		patientMergeLog.setSerializedMergedData(serialized);
+		/*log.debug(serialized);*/
+		//save the bean to the database
+
+		this.getSessionFactory().getCurrentSession().saveOrUpdate(patientMergeLog);
+				
+	}
+
 	
 }

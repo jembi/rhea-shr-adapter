@@ -24,8 +24,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -33,6 +35,11 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -40,6 +47,7 @@ import org.xml.sax.SAXException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -54,6 +62,8 @@ import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonName;
+import org.openmrs.api.APIException;
+import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7InArchive;
 import org.openmrs.hl7.HL7InError;
@@ -63,6 +73,7 @@ import org.openmrs.module.rheashradapter.api.LogEncounterService;
 import org.openmrs.module.rheashradapter.api.PatientMergeService;
 import org.openmrs.module.rheashradapter.model.GetEncounterLog;
 import org.openmrs.module.rheashradapter.model.MatchingEncounters;
+import org.openmrs.module.rheashradapter.model.PatientMergeLog;
 import org.openmrs.module.rheashradapter.model.PostEncounterLog;
 import org.openmrs.module.rheashradapter.model.RequestOutcome;
 import org.openmrs.module.rheashradapter.util.GenerateORU_R01;
@@ -71,6 +82,8 @@ import org.openmrs.module.rheashradapter.util.LoggerUtil;
 import org.openmrs.module.rheashradapter.util.RHEAErrorCodes;
 import org.openmrs.module.rheashradapter.util.RsmsHl7Receiver;
 import org.openmrs.module.rheashradapter.util.XmlMessageWriter;
+import org.openmrs.serialization.SerializationException;
+import org.openmrs.web.WebConstants;
 
 import org.springframework.stereotype.Controller;
 
@@ -93,45 +106,175 @@ public class RHEApatientController {
 	private RsmsHl7Receiver notificationReceiver = new RsmsHl7Receiver();
 	private LoggerUtil util = new LoggerUtil();
 
-	@RequestMapping(value = "/merge", method = RequestMethod.POST)
+	@RequestMapping(value = "/identifier", method = RequestMethod.PUT)
 	@ResponseBody
 	public void mergePatients(@RequestBody String mergeMessage,
 			HttpServletRequest request, HttpServletResponse response) {
-		PatientMergeService service = Context
-				.getService(PatientMergeService.class);
+		Map<String, String> postUpdateIdentifiers = null;
+		Map<String, String> preUpdateIdentifiers = null;
+		
+		HttpSession httpSession = request.getSession();
+		if (Context.isAuthenticated()) {
+			PatientService ps = Context.getPatientService();
+			
+			NodeList node = identifyMessageType(mergeMessage);			
+			String typeName = node.item(0).getTextContent();
 
-		NodeList nodes = convertToXMl(mergeMessage);
+				postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
+				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);
+				
+			Iterator it = postUpdateIdentifiers.entrySet().iterator();
+		    while (it.hasNext()) {
+		        Map.Entry pairs = (Map.Entry)it.next();
+		        System.out.println(pairs.getKey() + " = " + pairs.getValue());
+		    }
+			
+			Iterator i = preUpdateIdentifiers.entrySet().iterator();
+		    while (i.hasNext()) {
+		        Map.Entry pairs = (Map.Entry)i.next();
+		        System.out.println(pairs.getKey() + " = " + pairs.getValue());
+		    }
+		    
+		    
+			if(typeName.equals("LINK")){
+					Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);				
+					response.setStatus((Integer) httpResponse);
+					
+					if(response.equals(HttpServletResponse.SC_OK)){
+						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.merged");	
+						validatePostidentifiers(postUpdateIdentifiers);
+					}
 
-		String survivingPatientId = nodes.item(0).getTextContent().trim();
-		String retiringPatientId = nodes.item(1).getTextContent().trim();
-
-		String responseCode = service.mergePatient("ECID", survivingPatientId,
-				retiringPatientId);
-
-		if (responseCode.equals("200"))
-			response.setStatus(HttpServletResponse.SC_OK);
-		if (responseCode.equals("404"))
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
+			}else if(typeName.equals("UNLINK")){
+				Object httpResponse = restorePatient(postUpdateIdentifiers, preUpdateIdentifiers);
+					response.setStatus((Integer) httpResponse);
+					
+					if(response.equals(HttpServletResponse.SC_OK)){
+						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.restored");	
+						validatePostidentifiers(postUpdateIdentifiers);
+					} 
+			}	
+		}						
 	}
 
-	@RequestMapping(value = "/restore", method = RequestMethod.POST)
-	@ResponseBody
-	public void unMergePatients(@RequestBody String restoreMessage,
-			HttpServletRequest request, HttpServletResponse response) {
-
+	private void validatePostidentifiers(Map<String, String> validatePostidentifiers){
+		
+		PatientMergeService service = Context
+				.getService(PatientMergeService.class);		
+		service.validatePostidentifiers(validatePostidentifiers);
+		
+	}
+	
+	private Object mergePatient(Map<String, String> postUpdateIdentifiers, Map<String, String> preUpdateIdentifiers) {
+		
+		String preUpdateIdentifier = null;
+		String postUpdateIdentifier = null;
+		
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
-
-		NodeList nodes = convertToXMl(restoreMessage);
-
-		String restorePatientId = nodes.item(0).getTextContent().trim();
-		String responseCode = service.restorePatient("ECID", restorePatientId);
-
-		if (responseCode.equals("200"))
-			response.setStatus(HttpServletResponse.SC_OK);
-		if (responseCode.equals("404"))
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		
+		Iterator i = preUpdateIdentifiers.entrySet().iterator();
+	    while (i.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   preUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+	    
+		Iterator i2 = postUpdateIdentifiers.entrySet().iterator();
+	    while (i2.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i2.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   postUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+		
+	    if(preUpdateIdentifier == null || postUpdateIdentifier == null){
+	    	return HttpServletResponse.SC_NOT_FOUND;
+	    }
+	    
+		String survivingPatientId = postUpdateIdentifier;
+		System.out.println("+" + survivingPatientId);
+		String retiringPatientId = preUpdateIdentifier;
+		System.out.println("+" + retiringPatientId);
+		
+		PatientIdentifierType identifierType = Context.getPatientService()
+				.getPatientIdentifierTypeByName("ECID");
+		
+		List<PatientIdentifierType> identifiers = new ArrayList<PatientIdentifierType>();
+		identifiers.add(identifierType);
+		
+		List<Patient> patientsToKeep = Context.getPatientService()
+				.getPatients(null, survivingPatientId, identifiers, false);
+		List<Patient> patientsToRetire = Context.getPatientService()
+				.getPatients(null, retiringPatientId, identifiers, false);
+		
+		
+		Patient preferred = patientsToKeep.get(0);
+		List<Patient> notPreferred = new ArrayList<Patient>();
+		
+		patientsToRetire = Context.getPatientService()
+				.getPatients(null, retiringPatientId, identifiers, false);
+		
+		notPreferred.add(patientsToRetire.get(0));
+		
+		try {
+			service.mergePatients(preferred, notPreferred);
+		} catch (APIException e) {
+			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+		} catch (SerializationException e) {
+			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+		}
+		
+		return HttpServletResponse.SC_OK;
+	
+	}
+	
+	private Object restorePatient(Map<String, String> postUpdateIdentifiers, Map<String, String> preUpdateIdentifiers){
+		
+		
+		String preUpdateIdentifier = null;
+		String postUpdateIdentifier = null;
+		
+		PatientMergeService service = Context
+				.getService(PatientMergeService.class);
+		
+		Iterator i = preUpdateIdentifiers.entrySet().iterator();
+	    while (i.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   preUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+	    
+		Iterator i2 = postUpdateIdentifiers.entrySet().iterator();
+	    while (i2.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i2.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   postUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+		
+		String survivingPatientId = postUpdateIdentifier;
+		System.out.println("+" + survivingPatientId);
+		String retiringPatientId = preUpdateIdentifier;
+		System.out.println("+" + retiringPatientId);
+		
+		PatientMergeLog log = service.getPatientMergeLog(retiringPatientId);
+		
+		if(log == null){
+			
+		}
+		
+		try{
+		service.restorePatients(survivingPatientId, retiringPatientId, log);
+		} catch (APIException e) {
+			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+		} 
+		
+		return HttpServletResponse.SC_OK;
+		
+		
 	}
 
 	private NodeList convertToXMl(String message) {
@@ -153,6 +296,121 @@ public class RHEApatientController {
 			e.printStackTrace();
 		}
 		return doc.getElementsByTagName("patientIdentifier");
+	}
+	
+	private Map<String,String> identifyPostUpdateIdentifiers(String message) {
+		Map<String, String> postUpdateIdentifiers = new HashMap<String,String>();
+		
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	    factory.setNamespaceAware(true);
+	    org.w3c.dom.Document doc = null;
+	    XPathExpression expr = null;
+	    XPathExpression exprIdType = null;
+	    
+	    try{
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        doc = builder.parse(new InputSource(new StringReader(message)));
+	    	    
+	    XPathFactory xFactory = XPathFactory.newInstance();
+
+	    XPath xpath = xFactory.newXPath();
+	    expr = xpath.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifier/text()");
+	    Object result = expr.evaluate(doc, XPathConstants.NODESET);
+	    
+	    XPath xpathIdType = xFactory.newXPath();
+	    exprIdType = xpathIdType.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
+	    Object resultIdType = exprIdType.evaluate(doc, XPathConstants.NODESET);
+	    NodeList nodes = (NodeList) result;
+	    NodeList nodesIdType = (NodeList) resultIdType;
+	    
+	    for (int i=0; i<nodes.getLength();i++){
+	    	postUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(), nodes.item(i).getTextContent());
+	    }
+	    
+	    } catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
+	return postUpdateIdentifiers; 
+	}
+	
+	private Map<String,String> identifyPreUpdateIdentifiers(String message) {
+		Map<String, String> preUpdateIdentifiers = new HashMap<String,String>();
+		
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	    factory.setNamespaceAware(true);
+	    org.w3c.dom.Document doc = null;
+	    XPathExpression expr = null;
+	    XPathExpression exprIdType = null;
+	    
+	  try{
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        doc = builder.parse(new InputSource(new StringReader(message)));
+	    	    
+	    XPathFactory xFactory = XPathFactory.newInstance();
+
+	    XPath xpath = xFactory.newXPath();
+	    expr = xpath.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifier/text()");
+	    Object result = expr.evaluate(doc, XPathConstants.NODESET);
+	    
+	    XPath xpathIdType = xFactory.newXPath();
+	    exprIdType = xpathIdType.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
+	    Object resultIdType = exprIdType.evaluate(doc, XPathConstants.NODESET);
+	    NodeList nodes = (NodeList) result;
+	    NodeList nodesIdType = (NodeList) resultIdType;
+	    
+	 
+	    
+	    for (int i=0; i<nodes.getLength();i++){
+	    	preUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(), nodes.item(i).getTextContent());
+	    }
+	    
+	  	} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+				
+	return preUpdateIdentifiers; 
+	}
+	
+	private NodeList identifyMessageType(String message) {
+		DocumentBuilder db = null;
+		try {
+			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+		InputSource is = new InputSource();
+		is.setCharacterStream(new StringReader(message));
+
+		org.w3c.dom.Document doc = null;
+		try {
+			doc = db.parse(is);
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return doc.getElementsByTagName("source");
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.GET)
