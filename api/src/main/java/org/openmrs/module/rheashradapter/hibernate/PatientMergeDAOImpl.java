@@ -77,9 +77,10 @@ public class PatientMergeDAOImpl implements PatientMergeDAO {
 	}
 	
 	@Override
-	public PatientMergeLog getPatientMergeLog(String retiredPatient) {
+	public PatientMergeLog getPatientMergeLog(String retiredPatient, Boolean isRestored) {
 		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(PatientMergeLog.class)
-			    .add(Restrictions.eq("retiredPatient", retiredPatient));		
+			    .add(Restrictions.eq("retiredPatient", retiredPatient))
+				.add(Restrictions.eq("flag", isRestored));
 		return (PatientMergeLog) criteria.list().get(0);
 	}
 

@@ -6,8 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.Vector;
 
@@ -21,7 +19,6 @@ import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PatientProgram;
-import org.openmrs.Person;
 import org.openmrs.PersonName;
 import org.openmrs.Visit;
 import org.openmrs.api.APIException;
@@ -31,17 +28,12 @@ import org.openmrs.api.OrderService;
 import org.openmrs.api.ProgramWorkflowService;
 import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
-import org.openmrs.api.db.PatientDAO;
 import org.openmrs.module.rheashradapter.hibernate.LogEncounterDAO;
 import org.openmrs.module.rheashradapter.hibernate.PatientMergeDAO;
 import org.openmrs.module.rheashradapter.model.MergedDataObject;
-import org.openmrs.module.rheashradapter.model.PatientRestoreRecord;
 import org.openmrs.module.rheashradapter.model.PersonMergeLogData;
-import org.openmrs.module.rheashradapter.model.RestoredDataObject;
 import org.openmrs.module.rheashradapter.model.PatientMergeLog;
-import org.openmrs.person.PersonMergeLog;
 import org.openmrs.serialization.SerializationException;
-import org.openmrs.util.PrivilegeConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class PatientMergeServiceImpl implements PatientMergeService {
@@ -339,12 +331,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 		} catch (SerializationException e) {
 			e.printStackTrace();
 		}
-		
-		Person retiredPerson = log.getLooser();
-		
-		System.out.println(retiredPerson);	
-		System.out.println(retiredPerson.getGivenName());
-		
+				
 		PersonMergeLogData logData = log.getPersonMergeLogData();
 		
 		Map<String, String> data = logData.getMovedObservations(); 
@@ -422,7 +409,7 @@ public class PatientMergeServiceImpl implements PatientMergeService {
 	}
 
 	@Override
-	public PatientMergeLog getPatientMergeLog(String retiringPatientId){
-			return patientMergeDAO.getPatientMergeLog(retiringPatientId);
+	public PatientMergeLog getPatientMergeLog(String retiringPatientId, Boolean isRestored){
+			return patientMergeDAO.getPatientMergeLog(retiringPatientId, isRestored);
 	}
 }

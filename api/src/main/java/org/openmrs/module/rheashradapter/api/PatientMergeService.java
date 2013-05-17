@@ -13,8 +13,6 @@ import org.openmrs.module.rheashradapter.model.PatientMergeLog;
 
 @Transactional
 public interface PatientMergeService extends OpenmrsService {
-
-	//public String mergePatient(String patientIdentifierType, String survivingPatient, String retiringPatient);
 	
 	public void mergePatients(Patient preferred, List<Patient> notPreferred) throws APIException, SerializationException;
 	
@@ -22,5 +20,5 @@ public interface PatientMergeService extends OpenmrsService {
 	
 	public void validatePostidentifiers(Map<String, String> validatePostidentifiers);
 	
-	public PatientMergeLog getPatientMergeLog(String retiringPatientId);
+	public PatientMergeLog getPatientMergeLog(String retiringPatientId, Boolean isRestored);
 }

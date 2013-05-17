@@ -115,26 +115,12 @@ public class RHEApatientController {
 		
 		HttpSession httpSession = request.getSession();
 		if (Context.isAuthenticated()) {
-			PatientService ps = Context.getPatientService();
 			
 			NodeList node = identifyMessageType(mergeMessage);			
 			String typeName = node.item(0).getTextContent();
 
 				postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
-				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);
-				
-			Iterator it = postUpdateIdentifiers.entrySet().iterator();
-		    while (it.hasNext()) {
-		        Map.Entry pairs = (Map.Entry)it.next();
-		        System.out.println(pairs.getKey() + " = " + pairs.getValue());
-		    }
-			
-			Iterator i = preUpdateIdentifiers.entrySet().iterator();
-		    while (i.hasNext()) {
-		        Map.Entry pairs = (Map.Entry)i.next();
-		        System.out.println(pairs.getKey() + " = " + pairs.getValue());
-		    }
-		    
+				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);	    
 		    
 			if(typeName.equals("LINK")){
 					Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);				
@@ -194,9 +180,7 @@ public class RHEApatientController {
 	    }
 	    
 		String survivingPatientId = postUpdateIdentifier;
-		System.out.println("+" + survivingPatientId);
 		String retiringPatientId = preUpdateIdentifier;
-		System.out.println("+" + retiringPatientId);
 		
 		PatientIdentifierType identifierType = Context.getPatientService()
 				.getPatientIdentifierTypeByName("ECID");
@@ -256,14 +240,12 @@ public class RHEApatientController {
 	    }
 		
 		String survivingPatientId = postUpdateIdentifier;
-		System.out.println("+" + survivingPatientId);
 		String retiringPatientId = preUpdateIdentifier;
-		System.out.println("+" + retiringPatientId);
 		
-		PatientMergeLog log = service.getPatientMergeLog(retiringPatientId);
+		PatientMergeLog log = service.getPatientMergeLog(retiringPatientId, false);
 		
 		if(log == null){
-			
+			return HttpServletResponse.SC_NOT_FOUND;
 		}
 		
 		try{
@@ -272,30 +254,7 @@ public class RHEApatientController {
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		} 
 		
-		return HttpServletResponse.SC_OK;
-		
-		
-	}
-
-	private NodeList convertToXMl(String message) {
-		DocumentBuilder db = null;
-		try {
-			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		}
-		InputSource is = new InputSource();
-		is.setCharacterStream(new StringReader(message));
-
-		org.w3c.dom.Document doc = null;
-		try {
-			doc = db.parse(is);
-		} catch (SAXException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return doc.getElementsByTagName("patientIdentifier");
+		return HttpServletResponse.SC_OK;		
 	}
 	
 	private Map<String,String> identifyPostUpdateIdentifiers(String message) {
@@ -328,16 +287,12 @@ public class RHEApatientController {
 	    }
 	    
 	    } catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SAXException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 			
@@ -376,19 +331,14 @@ public class RHEApatientController {
 	    }
 	    
 	  	} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SAXException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-				
+		}			
 	return preUpdateIdentifiers; 
 	}
 	
