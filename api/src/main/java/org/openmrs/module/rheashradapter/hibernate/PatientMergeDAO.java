@@ -17,7 +17,7 @@ public interface PatientMergeDAO {
 	
 	void savePatientRestore(PatientRestoreRecord patientRestoreRecord);
 	
-	public PatientMergeLog getPatientMergeLog(String retiredPatient);
+	public PatientMergeLog getPatientMergeLog(String retiredPatient, Boolean isRestored);
 		
 	public Patient getRetiredPatient(int patientId);
 
