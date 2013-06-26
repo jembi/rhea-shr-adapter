@@ -69,6 +69,8 @@ public class GenerateORU_R01Alert implements Serializable {
 
 	public static String username = Context.getAdministrationService().getGlobalProperty("rheashradapter.hie.username");
 	public static String password = Context.getAdministrationService().getGlobalProperty("rheashradapter.hie.password");
+	public static String keystorePassword = Context.getAdministrationService().getGlobalProperty("rheashradapter.keystore.password");
+
 
 	private LogEncounterService service = Context
 			.getService(LogEncounterService.class);
@@ -231,7 +233,7 @@ public class GenerateORU_R01Alert implements Serializable {
 		// Load the keyStore
 
 		KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-		keyStore.load(keyStoreStream, "Jembi#123".toCharArray());
+		keyStore.load(keyStoreStream, keystorePassword.toCharArray());
 		log.info("KeyStoreStream = " + IOUtils.toString(keyStoreStream));
 		keyStoreStream.close();
 
