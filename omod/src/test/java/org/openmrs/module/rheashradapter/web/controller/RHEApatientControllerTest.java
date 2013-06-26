@@ -169,7 +169,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	public void createEncounters_shouldCreateORUR01MessageForKnownNotificationType() throws Exception {
 		RHEApatientController controller = new RHEApatientController();
 		
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
+		MockHttpServletRequest request = new MockHttpServletRequest("RPOST", "");
 		HttpServletResponse response = new MockHttpServletResponse();
 		
 		String enterpriseId = "1234";
@@ -179,11 +179,26 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		
 		String hl7 = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
 			    "sample-orur01.xml"));		
+		assertNotNull(hl7);
 		Encounter encounter = (Encounter) controller.createEncounters(hl7, enterpriseId, idType, "RISK", request, response);
 		assertNotNull(encounter);
 		assertTrue(encounter instanceof Encounter);
 
 		
+	}
+	
+	@Test
+	@Verifies(value = "should Parse Merge Message Accurately (", method = "mergePatients(...)")
+	public void mergePatients_shouldParseMergeMessageAccurately() throws Exception {
+		RHEApatientController controller = new RHEApatientController();
+		
+		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
+		HttpServletResponse response = new MockHttpServletResponse();
+
+		String mergeMessage = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
+			    "sample-openempi-merge-message.xml"));	
+		
+		controller.mergePatients(mergeMessage, request, response);
 	}
 		
 }

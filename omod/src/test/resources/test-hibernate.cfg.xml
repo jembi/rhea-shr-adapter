@@ -10,7 +10,8 @@
 		<mapping resource="PostEncounterLog.hbm.xml" />
 		<mapping resource="PatientMergeRecord.hbm.xml" />
 		<mapping resource="PatientRestoreRecord.hbm.xml" />
-		<mapping resource="PersonMergeLog.hbm.xml" />
+		<mapping resource="PatientMergeLog.hbm.xml" />
+		<mapping resource="MergedDataObject.hbm.xml" />
 		<mapping resource="RestoredDataObject.hbm.xml" />
 	</session-factory>
 </hibernate-configuration>

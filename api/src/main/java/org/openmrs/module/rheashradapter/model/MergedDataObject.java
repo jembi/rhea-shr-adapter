@@ -3,7 +3,7 @@ package org.openmrs.module.rheashradapter.model;
 
 public class MergedDataObject implements Comparable<MergedDataObject> {
 	
-/*	publiPaneRecordrd getPatientMergeRecord() {
+	public PatientMergeRecord getPatientMergeRecord() {
 		return patientMergeRecord;
 	}
 
@@ -13,10 +13,11 @@ public class MergedDataObject implements Comparable<MergedDataObject> {
 
 	private PatientMergeRecord patientMergeRecord;
 	
+
 	public Integer getMergedDataObjectId() {
 		return mergedDataObjectId;
-	}*/
-
+	}
+	
 	public void setMergedDataObjectId(Integer mergedDataObjectId) {
 		this.mergedDataObjectId = mergedDataObjectId;
 	}
@@ -48,5 +49,4 @@ public class MergedDataObject implements Comparable<MergedDataObject> {
 		return obsId.compareTo(o.getObsId());
 	}
 	
-
 }
