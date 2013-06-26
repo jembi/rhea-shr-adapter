@@ -54,6 +54,12 @@
 		<description>The password to send reminders to the Interopability layer</description>
 	</globalProperty>
 	
+	<globalProperty>
+    	<property>rheashradapter.keystore.password</property>
+    	<defaultValue></defaultValue>
+    	<description>The keystore password used to post to the HIE</description>
+    </globalProperty>  
+	
 		<globalProperty>
 		<property>rheashradapter.hie.url</property>
 		<defaultValue></defaultValue>
