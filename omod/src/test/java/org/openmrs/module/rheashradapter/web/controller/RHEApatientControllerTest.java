@@ -169,7 +169,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 	public void createEncounters_shouldCreateORUR01MessageForKnownNotificationType() throws Exception {
 		RHEApatientController controller = new RHEApatientController();
 		
-		MockHttpServletRequest request = new MockHttpServletRequest("RPOST", "");
+		MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
 		HttpServletResponse response = new MockHttpServletResponse();
 		
 		String enterpriseId = "1234";
@@ -196,7 +196,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		HttpServletResponse response = new MockHttpServletResponse();
 
 		String mergeMessage = IOUtils.toString(getClass().getClassLoader().getResourceAsStream(
-			    "sample-openempi-merge-message.xml"));	
+			    "sample-merge-message.xml"));	
 		
 		controller.mergePatients(mergeMessage, request, response);
 	}
