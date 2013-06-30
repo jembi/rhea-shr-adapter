@@ -49,5 +49,6 @@
   <person_attribute_type person_attribute_type_id="1" name="EPID" description="EPID No." format="java.lang.String" searchable="false" creator="1" date_created="2007-05-03 09:20:37.0" uuid="cdc6a460-2700-102b-80cb-0017a47871b2" retired="false" sort_weight="1"/>
   <person_attribute person_attribute_id="1" person_id="1" value="3525410" person_attribute_type_id="1" creator="1" date_created="2007-05-03 09:20:37.0" voided="false" uuid="ca9a9bac-2700-102b-80cb-0017a47871b2"/>
 
+  <encounter_provider encounter_provider_id="1" encounter_id="11" encounter_role_id="1" provider_id="1" creator="1" date_created="2005-01-01 00:00:00.0" voided="false" uuid="c1897cef-05d4-4f71-bc1f-078ddba780ae" /> 
   
 </dataset>
