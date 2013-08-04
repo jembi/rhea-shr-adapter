@@ -35,13 +35,16 @@ import org.openmrs.Concept;
 import org.openmrs.ConceptDatatype;
 import org.openmrs.ConceptMap;
 import org.openmrs.ConceptNumeric;
+import org.openmrs.EncounterRole;
 import org.openmrs.Location;
 import org.openmrs.Obs;
 import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonAttribute;
+import org.openmrs.Provider;
 import org.openmrs.api.ConceptService;
 import org.openmrs.hl7.HL7Constants;
+import org.openmrs.module.rheashradapter.api.LogEncounterService;
 
 import org.openmrs.Encounter;
 import org.openmrs.api.context.Context;
@@ -157,7 +160,29 @@ public class GenerateORU_R01 implements Serializable {
 
 			orc = r01.getPATIENT_RESULT().getORDER_OBSERVATION(orderORCCount).getORC();
 			orc.getOrderControl().setValue(RHEAHL7Constants.ORDER_CONTROL);
-	        orc.getOrderingProvider(0).getIDNumber().setValue(encounterList.get(0).getProvider().getId().toString());
+			
+			if(encounterList.get(0).getProvider() != null)
+				orc.getOrderingProvider(0).getIDNumber().setValue(encounterList.get(0).getProvider().getId().toString());
+			
+			else{
+				
+				Set<Provider> provider = null;
+				Provider setElement = null;
+								
+					EncounterRole encRole = Context.getEncounterService().getEncounterRoleByUuid(Context.getAdministrationService().getGlobalProperty("rheashradapter.encounterrole.uuid"));
+					provider = encounterList.get(0).getProvidersByRole(encRole);  
+				
+				Iterator<Provider> iterator = provider.iterator();
+			    if(iterator.hasNext()) {
+			    	setElement = iterator.next();
+			       
+			    }
+			    
+				orc.getOrderingProvider(0).getIDNumber().setValue(setElement.getIdentifier().toString());
+
+				
+			}
+			
 	        
 	        orc.getOrderControlCodeReason().getIdentifier().setValue("Identifier");
 	        orc.getOrderControlCodeReason().getText().setValue("Text");
@@ -176,6 +201,8 @@ public class GenerateORU_R01 implements Serializable {
 	
 	private void createOBREnc(ORU_R01 r01, List<Encounter> encounterList) throws Exception{
 		
+		List<EncounterRole> roles = Context.getEncounterService().getAllEncounterRoles(false);
+
 		for(Encounter e : encounterList){
 		OBR obr = null;
 	
@@ -200,6 +227,9 @@ public class GenerateORU_R01 implements Serializable {
 			Set<Obs> o = e.getAllObs();
 			
 			Person person = e.getProvider();
+		
+		if(person != null) {	
+			
 			PersonAttribute personAttribute = person.getAttribute(RHEAHL7Constants.PROVIDER_IDENTIFIER_TYPE);		
 			
 			if(personAttribute != null){
@@ -209,6 +239,28 @@ public class GenerateORU_R01 implements Serializable {
 			
 			obr.getOrderingProvider(0).getFamilyName().getSurname().setValue(e.getProvider().getFamilyName());
 			obr.getOrderingProvider(0).getGivenName().setValue(e.getProvider().getGivenName());
+		}
+		
+		else {
+			Set<Provider> provider = null;
+			Provider setElement = null;
+							
+				EncounterRole encRole = Context.getEncounterService().getEncounterRoleByUuid(Context.getAdministrationService().getGlobalProperty("rheashradapter.encounterrole.uuid"));
+				provider = e.getProvidersByRole(encRole);  
+			
+			Iterator<Provider> iterator = provider.iterator();
+		    if(iterator.hasNext()) {
+		    	setElement = iterator.next();
+		       
+		    }
+		    
+			obr.getOrderingProvider(0).getIDNumber().setValue(setElement.getIdentifier());
+			obr.getOrderingProvider(0).getIdentifierTypeCode().setValue(RHEAHL7Constants.PROVIDER_IDENTIFIER_TYPE);
+			
+			obr.getOrderingProvider(0).getFamilyName().getSurname().setValue(setElement.getName());
+			obr.getOrderingProvider(0).getGivenName().setValue(setElement.getName());
+			
+		}
 			
 			// Accession number
 			String accessionNumber = String.valueOf(e.getEncounterId());
