@@ -18,12 +18,15 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hibernate.type.IdentifierType;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.ConceptName;
@@ -44,6 +47,7 @@ import org.openmrs.PersonName;
 import org.openmrs.Provider;
 import org.openmrs.User;
 import org.openmrs.api.EncounterService;
+import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7Constants;
 import org.openmrs.hl7.HL7InQueueProcessor;
@@ -335,46 +339,41 @@ public class RHEA_ORU_R01Handler implements Application {
 		
 	}
 	
-	private void addIdentifiers(PID pid) {
+	private void addIdentifiers(PID pid) throws HL7Exception {
 		CX[] cxs = pid.getPatientIdentifierList();
-		Patient patient = null;
+		Patient patient = getPatient();
+		PatientService ps = Context.getPatientService();
+
 		CX omrsCX = null;
 		for(CX cx : cxs) {
-			if (cx.getIdentifierTypeCode().getValue().startsWith("OMRS")){
-				omrsCX = cx;
+			PatientIdentifierType idType = ps.getPatientIdentifierTypeByName(cx.getIdentifierTypeCode().getValue());
+			if (idType==null)
+				idType = (PatientIdentifierType) addIdentifierType(cx.getIdentifierTypeCode().getValue());
+
+			if (patient.getPatientIdentifier(idType.getName()) == null) {
+				PatientIdentifier identifier = new PatientIdentifier();
+				identifier.setIdentifierType(idType);
+				identifier.setLocation(Context.getLocationService().getLocation(1));
+				identifier.setDateCreated(new Date());
+				identifier.setVoided(false);
+				identifier.setIdentifier(cx.getIDNumber().getValue());
+
+				patient.addIdentifier(identifier);
 			}
 		}
-		
-		try {
-			patient = getPatient();
-		} catch (HL7Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
-	   if(omrsCX != null) {
-	   PatientIdentifierType pidType = Context.getPatientService().getPatientIdentifierTypeByName(omrsCX.getIdentifierTypeCode().getValue());
-	   if(pidType == null) {
-		   pidType = new PatientIdentifierType();
-		   pidType.setName(omrsCX.getIdentifierTypeCode().getValue());
-		   pidType.setDescription("OMRS Identifier");
-		   pidType.setRequired(false);
-		   Context.getPatientService().savePatientIdentifierType(pidType);
-	   }
-		
-	   	PatientIdentifier identifier = new PatientIdentifier();
-		identifier.setIdentifierType(pidType);
-		identifier.setLocation(Context.getLocationService().getLocation(1));
-		identifier.setDateCreated(new Date());
-		identifier.setVoided(false);
-		identifier.setIdentifier(omrsCX.getIDNumber().getValue());
-		
-		patient.addIdentifier(identifier);
-		
-		Context.getPatientService().savePatient(patient);
-	   }
-		
-	}
+		ps.savePatient(patient);
+}
+
+
+private PatientIdentifierType addIdentifierType(String idType) {
+	PatientIdentifierType type = new PatientIdentifierType();
+	type.setName(idType);
+	type.setDescription(idType);
+	type.setRequired(false);
+	Context.getPatientService().savePatientIdentifierType(type);
+	return type;
+}
 
 	private MSH getMSH(ORU_R01 oru) {
 		return oru.getMSH();
@@ -406,8 +405,10 @@ public class RHEA_ORU_R01Handler implements Application {
 	 */
 	private Encounter createEncounter(MSH msh, Patient patient, PV1 pv1, OBR obr) throws HL7Exception {
 		
-		// the encounter we will return
-		Encounter encounter = null;
+			// the encounter we will return
+			Encounter encounter = null;
+			EncounterRole encounterRole = null;
+			
 			encounter = new Encounter();
 			
 			Date encounterDate = getEncounterDate(obr);
@@ -418,15 +419,20 @@ public class RHEA_ORU_R01Handler implements Application {
 			
 			encounter.setEncounterDatetime(encounterDate);
 			
-			//when
-			EncounterRole enounterRole = new EncounterRole();
-			enounterRole.setName("SHR Provider");
-			enounterRole.setDescription("Created by the SHR");
+			String uuid = Context.getAdministrationService().getGlobalProperty("rheashradapter.encounterrole.uuid");
+			encounterRole = Context.getEncounterService().getEncounterRoleByUuid(uuid);
 			
-			Context.getEncounterService().saveEncounterRole(enounterRole);
+			if(encounterRole == null) {
+			encounterRole = new EncounterRole();
+			encounterRole.setName("SHR Provider");
+			encounterRole.setDescription("Created by the SHR");
 			
-			//encounter.addProvider(enounterRole, provider);
-			encounter.setProvider(enounterRole, provider);
+			encounterRole = Context.getEncounterService().saveEncounterRole(encounterRole);
+			Context.getAdministrationService().setGlobalProperty("rheashradapter.encounterrole.uuid", encounterRole.getUuid());
+
+			} 
+			
+			encounter.setProvider(encounterRole, provider);
 			encounter.setPatient(patient);
 			encounter.setLocation(location);
 			encounter.setEncounterType(encounterType);
@@ -596,6 +602,7 @@ public class RHEA_ORU_R01Handler implements Application {
 			} else {
 				try {
 					Concept c = getConcept(value, uid);
+	
 					obs.setValueCoded(c);
 					ConceptName name = c.getName();
 					obs.setValueCodedName(name);
