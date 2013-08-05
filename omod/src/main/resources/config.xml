@@ -55,15 +55,21 @@
 	</globalProperty>
 	
 	<globalProperty>
-    	<property>rheashradapter.keystore.password</property>
-    	<defaultValue></defaultValue>
-    	<description>The keystore password used to post to the HIE</description>
-    </globalProperty>  
+		<property>rheashradapter.keystore.password</property>
+		<defaultValue></defaultValue>
+		<description>The keystore password used to post to the HIE</description>
+	</globalProperty>
 	
 		<globalProperty>
 		<property>rheashradapter.hie.url</property>
 		<defaultValue></defaultValue>
 		<description>The url to send reminders to the Interopability layer</description>
+	</globalProperty>
+	
+	<globalProperty>
+		<property>rheashradapter.encounterrole.uuid</property>
+		<defaultValue></defaultValue>
+		<description>The uuid of the EncounterRole object used to persist RHEA encounters</description>
 	</globalProperty>
 	
 	<!-- Maps hibernate file's, if present -->

@@ -108,119 +108,100 @@ public class RHEApatientController {
 
 	@RequestMapping(value = "/identifier", method = RequestMethod.PUT)
 	@ResponseBody
-	public Object mergePatients(@RequestBody String mergeMessage,
+	public void mergePatients(@RequestBody String mergeMessage,
 			HttpServletRequest request, HttpServletResponse response) {
 		Map<String, String> postUpdateIdentifiers = null;
 		Map<String, String> preUpdateIdentifiers = null;
-		Object httpResponse = null;
-
+		
 		HttpSession httpSession = request.getSession();
 		if (Context.isAuthenticated()) {
-
-			NodeList node = identifyMessageType(mergeMessage);
+			
+			NodeList node = identifyMessageType(mergeMessage);			
 			String typeName = node.item(0).getTextContent();
 
-			postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
-			preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);
+				postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
+				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);	    
+		    
+			if(typeName.equals("LINK")){
+					Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);				
+					response.setStatus((Integer) httpResponse);
+					
+					if(response.equals(HttpServletResponse.SC_OK)){
+						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.merged");	
+						validatePostidentifiers(postUpdateIdentifiers);
+					}
 
-			if (typeName.equals("LINK")) {
-				httpResponse = mergePatient(postUpdateIdentifiers,
-						preUpdateIdentifiers);
-				response.setStatus((Integer) httpResponse);
-
-				if (response.equals(HttpServletResponse.SC_OK)) {
-					httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR,
-							"Patient.merged");
-					validatePostidentifiers(postUpdateIdentifiers);
-				} else if (response.equals(HttpServletResponse.SC_NOT_FOUND)) {
-					httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR,
-							"rheashradapter.patientNotFound");
-				} else if (response
-						.equals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)) {
-					httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR,
-							"rheashradapter.patientNotFound");
-				}
-
-			} else if (typeName.equals("UNLINK")) {
-				httpResponse = restorePatient(postUpdateIdentifiers,
-						preUpdateIdentifiers);
-				response.setStatus((Integer) httpResponse);
-
-				if (response.equals(HttpServletResponse.SC_OK)) {
-					httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR,
-							"Patient.restored");
-					validatePostidentifiers(postUpdateIdentifiers);
-				}
-			}
-		}
-
-		return null;
+			}else if(typeName.equals("UNLINK")){
+				Object httpResponse = restorePatient(postUpdateIdentifiers, preUpdateIdentifiers);
+					response.setStatus((Integer) httpResponse);
+					
+					if(response.equals(HttpServletResponse.SC_OK)){
+						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.restored");	
+						validatePostidentifiers(postUpdateIdentifiers);
+					} 
+			}	
+		}						
 	}
 
-	private void validatePostidentifiers(
-			Map<String, String> validatePostidentifiers) {
-
+	private void validatePostidentifiers(Map<String, String> validatePostidentifiers){
+		
 		PatientMergeService service = Context
-				.getService(PatientMergeService.class);
+				.getService(PatientMergeService.class);		
 		service.validatePostidentifiers(validatePostidentifiers);
-
+		
 	}
-
-	private Object mergePatient(Map<String, String> postUpdateIdentifiers,
-			Map<String, String> preUpdateIdentifiers) {
-
+	
+	private Object mergePatient(Map<String, String> postUpdateIdentifiers, Map<String, String> preUpdateIdentifiers) {
+		
 		String preUpdateIdentifier = null;
 		String postUpdateIdentifier = null;
-
+		
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
-
+		
 		Iterator i = preUpdateIdentifiers.entrySet().iterator();
-		while (i.hasNext()) {
-			Map.Entry pairs = (Map.Entry) i.next();
-			if (pairs.getKey().equals("ECID")) {
-				preUpdateIdentifier = (String) pairs.getValue();
-			}
-		}
-
+	    while (i.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   preUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+	    
 		Iterator i2 = postUpdateIdentifiers.entrySet().iterator();
-		while (i2.hasNext()) {
-			Map.Entry pairs = (Map.Entry) i2.next();
-			if (pairs.getKey().equals("ECID")) {
-				postUpdateIdentifier = (String) pairs.getValue();
-			}
-		}
-
-		if (preUpdateIdentifier == null || postUpdateIdentifier == null) {
-			return HttpServletResponse.SC_NOT_FOUND;
-		}
-
+	    while (i2.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i2.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   postUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+		
+	    if(preUpdateIdentifier == null || postUpdateIdentifier == null){
+	    	return HttpServletResponse.SC_NOT_FOUND;
+	    }
+	    
 		String survivingPatientId = postUpdateIdentifier;
 		String retiringPatientId = preUpdateIdentifier;
-
+		
 		PatientIdentifierType identifierType = Context.getPatientService()
 				.getPatientIdentifierTypeByName("ECID");
-
+		
 		List<PatientIdentifierType> identifiers = new ArrayList<PatientIdentifierType>();
 		identifiers.add(identifierType);
-
-		List<Patient> patientsToKeep = Context.getPatientService().getPatients(
-				null, survivingPatientId, identifiers, false);
+		
+		List<Patient> patientsToKeep = Context.getPatientService()
+				.getPatients(null, survivingPatientId, identifiers, false);
 		List<Patient> patientsToRetire = Context.getPatientService()
 				.getPatients(null, retiringPatientId, identifiers, false);
-
-		if (patientsToKeep.isEmpty() || patientsToRetire.isEmpty()) {
-			return HttpServletResponse.SC_NOT_FOUND;
-		}
-
+		
+		
 		Patient preferred = patientsToKeep.get(0);
 		List<Patient> notPreferred = new ArrayList<Patient>();
-
-		patientsToRetire = Context.getPatientService().getPatients(null,
-				retiringPatientId, identifiers, false);
-
+		
+		patientsToRetire = Context.getPatientService()
+				.getPatients(null, retiringPatientId, identifiers, false);
+		
 		notPreferred.add(patientsToRetire.get(0));
-
+		
 		try {
 			service.mergePatients(preferred, notPreferred);
 		} catch (APIException e) {
@@ -228,89 +209,84 @@ public class RHEApatientController {
 		} catch (SerializationException e) {
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		}
-
+		
 		return HttpServletResponse.SC_OK;
-
+	
 	}
-
-	private Object restorePatient(Map<String, String> postUpdateIdentifiers,
-			Map<String, String> preUpdateIdentifiers) {
-
+	
+	private Object restorePatient(Map<String, String> postUpdateIdentifiers, Map<String, String> preUpdateIdentifiers){
+		
+		
 		String preUpdateIdentifier = null;
 		String postUpdateIdentifier = null;
-
+		
 		PatientMergeService service = Context
 				.getService(PatientMergeService.class);
-
+		
 		Iterator i = preUpdateIdentifiers.entrySet().iterator();
-		while (i.hasNext()) {
-			Map.Entry pairs = (Map.Entry) i.next();
-			if (pairs.getKey().equals("ECID")) {
-				preUpdateIdentifier = (String) pairs.getValue();
-			}
-		}
-
+	    while (i.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   preUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+	    
 		Iterator i2 = postUpdateIdentifiers.entrySet().iterator();
-		while (i2.hasNext()) {
-			Map.Entry pairs = (Map.Entry) i2.next();
-			if (pairs.getKey().equals("ECID")) {
-				postUpdateIdentifier = (String) pairs.getValue();
-			}
-		}
-
+	    while (i2.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)i2.next();
+		       if(pairs.getKey().equals("ECID")){
+		    	   postUpdateIdentifier = (String) pairs.getValue();
+		       }
+	    }
+		
 		String survivingPatientId = postUpdateIdentifier;
 		String retiringPatientId = preUpdateIdentifier;
-
-		PatientMergeLog log = service.getPatientMergeLog(retiringPatientId,
-				false);
-
-		if (log == null) {
+		
+		PatientMergeLog log = service.getPatientMergeLog(retiringPatientId, false);
+		
+		if(log == null){
 			return HttpServletResponse.SC_NOT_FOUND;
 		}
-
-		try {
-			service.restorePatients(survivingPatientId, retiringPatientId, log);
+		
+		try{
+		service.restorePatients(survivingPatientId, retiringPatientId, log);
 		} catch (APIException e) {
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-		}
-
-		return HttpServletResponse.SC_OK;
+		} 
+		
+		return HttpServletResponse.SC_OK;		
 	}
-
-	private Map<String, String> identifyPostUpdateIdentifiers(String message) {
-		Map<String, String> postUpdateIdentifiers = new HashMap<String, String>();
-
+	
+	private Map<String,String> identifyPostUpdateIdentifiers(String message) {
+		Map<String, String> postUpdateIdentifiers = new HashMap<String,String>();
+		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		factory.setNamespaceAware(true);
-		org.w3c.dom.Document doc = null;
-		XPathExpression expr = null;
-		XPathExpression exprIdType = null;
+	    factory.setNamespaceAware(true);
+	    org.w3c.dom.Document doc = null;
+	    XPathExpression expr = null;
+	    XPathExpression exprIdType = null;
+	    
+	    try{
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        doc = builder.parse(new InputSource(new StringReader(message)));
+	    	    
+	    XPathFactory xFactory = XPathFactory.newInstance();
 
-		try {
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			doc = builder.parse(new InputSource(new StringReader(message)));
-
-			XPathFactory xFactory = XPathFactory.newInstance();
-
-			XPath xpath = xFactory.newXPath();
-			expr = xpath
-					.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifier/text()");
-			Object result = expr.evaluate(doc, XPathConstants.NODESET);
-
-			XPath xpathIdType = xFactory.newXPath();
-			exprIdType = xpathIdType
-					.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
-			Object resultIdType = exprIdType.evaluate(doc,
-					XPathConstants.NODESET);
-			NodeList nodes = (NodeList) result;
-			NodeList nodesIdType = (NodeList) resultIdType;
-
-			for (int i = 0; i < nodes.getLength(); i++) {
-				postUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(),
-						nodes.item(i).getTextContent());
-			}
-
-		} catch (XPathExpressionException e) {
+	    XPath xpath = xFactory.newXPath();
+	    expr = xpath.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifier/text()");
+	    Object result = expr.evaluate(doc, XPathConstants.NODESET);
+	    
+	    XPath xpathIdType = xFactory.newXPath();
+	    exprIdType = xpathIdType.compile("//postUpdateIdentifiers/postUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
+	    Object resultIdType = exprIdType.evaluate(doc, XPathConstants.NODESET);
+	    NodeList nodes = (NodeList) result;
+	    NodeList nodesIdType = (NodeList) resultIdType;
+	    
+	    for (int i=0; i<nodes.getLength();i++){
+	    	postUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(), nodes.item(i).getTextContent());
+	    }
+	    
+	    } catch (XPathExpressionException e) {
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
@@ -319,44 +295,42 @@ public class RHEApatientController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		return postUpdateIdentifiers;
+			
+	return postUpdateIdentifiers; 
 	}
-
-	private Map<String, String> identifyPreUpdateIdentifiers(String message) {
-		Map<String, String> preUpdateIdentifiers = new HashMap<String, String>();
-
+	
+	private Map<String,String> identifyPreUpdateIdentifiers(String message) {
+		Map<String, String> preUpdateIdentifiers = new HashMap<String,String>();
+		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		factory.setNamespaceAware(true);
-		org.w3c.dom.Document doc = null;
-		XPathExpression expr = null;
-		XPathExpression exprIdType = null;
+	    factory.setNamespaceAware(true);
+	    org.w3c.dom.Document doc = null;
+	    XPathExpression expr = null;
+	    XPathExpression exprIdType = null;
+	    
+	  try{
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        doc = builder.parse(new InputSource(new StringReader(message)));
+	    	    
+	    XPathFactory xFactory = XPathFactory.newInstance();
 
-		try {
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			doc = builder.parse(new InputSource(new StringReader(message)));
-
-			XPathFactory xFactory = XPathFactory.newInstance();
-
-			XPath xpath = xFactory.newXPath();
-			expr = xpath
-					.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifier/text()");
-			Object result = expr.evaluate(doc, XPathConstants.NODESET);
-
-			XPath xpathIdType = xFactory.newXPath();
-			exprIdType = xpathIdType
-					.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
-			Object resultIdType = exprIdType.evaluate(doc,
-					XPathConstants.NODESET);
-			NodeList nodes = (NodeList) result;
-			NodeList nodesIdType = (NodeList) resultIdType;
-
-			for (int i = 0; i < nodes.getLength(); i++) {
-				preUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(),
-						nodes.item(i).getTextContent());
-			}
-
-		} catch (XPathExpressionException e) {
+	    XPath xpath = xFactory.newXPath();
+	    expr = xpath.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifier/text()");
+	    Object result = expr.evaluate(doc, XPathConstants.NODESET);
+	    
+	    XPath xpathIdType = xFactory.newXPath();
+	    exprIdType = xpathIdType.compile("//preUpdateIdentifiers/preUpdateIdentifier/identifierDomain/universalIdentifierTypeCode/text()");
+	    Object resultIdType = exprIdType.evaluate(doc, XPathConstants.NODESET);
+	    NodeList nodes = (NodeList) result;
+	    NodeList nodesIdType = (NodeList) resultIdType;
+	    
+	 
+	    
+	    for (int i=0; i<nodes.getLength();i++){
+	    	preUpdateIdentifiers.put(nodesIdType.item(i).getTextContent(), nodes.item(i).getTextContent());
+	    }
+	    
+	  	} catch (XPathExpressionException e) {
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
@@ -364,10 +338,10 @@ public class RHEApatientController {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		return preUpdateIdentifiers;
+		}			
+	return preUpdateIdentifiers; 
 	}
-
+	
 	private NodeList identifyMessageType(String message) {
 		DocumentBuilder db = null;
 		try {
@@ -410,6 +384,11 @@ public class RHEApatientController {
 		Date toDate = null;
 		Patient p = null;
 		ORU_R01 r01 = null;
+
+		log.info("RHEA Controller call detected...");
+		log.info("Enterprise Patient Id is :" + patientId);
+		log.info("Enterprise Id type is :" + idType);
+		log.info("encounterUniqueId is :" + encounterUniqueId);
 
 		GetEncounterLog getEncounterLog = new GetEncounterLog();
 		getEncounterLog.setLogTime(new Date());
@@ -648,17 +627,17 @@ public class RHEApatientController {
 			}
 
 			try {
-				response.getWriter().write(hl7Msg);
-				response.getWriter().flush();
-				response.getWriter().close();
+				
 
 				service.saveGetEncounterLog(getEncounterLog);
 				response.setStatus(HttpServletResponse.SC_OK);
-			} catch (IOException e) {
+				
+				return hl7Msg;
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		return r01;
+		return null;
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.POST)
