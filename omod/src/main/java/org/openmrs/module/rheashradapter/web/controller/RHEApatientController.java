@@ -193,7 +193,9 @@ public class RHEApatientController {
 		List<Patient> patientsToRetire = Context.getPatientService()
 				.getPatients(null, retiringPatientId, identifiers, false);
 		
-		
+		if(patientsToKeep.isEmpty() || patientsToRetire.isEmpty()){
+			return HttpServletResponse.SC_NOT_FOUND;
+		}else{
 		Patient preferred = patientsToKeep.get(0);
 		List<Patient> notPreferred = new ArrayList<Patient>();
 		
@@ -208,6 +210,7 @@ public class RHEApatientController {
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		} catch (SerializationException e) {
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+		}
 		}
 		
 		return HttpServletResponse.SC_OK;

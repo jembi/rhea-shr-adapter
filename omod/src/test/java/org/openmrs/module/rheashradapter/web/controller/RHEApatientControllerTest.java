@@ -20,7 +20,11 @@ import org.openmrs.test.Verifies;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import ca.uhn.hl7v2.HL7Exception;
+import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v25.message.ORU_R01;
+import ca.uhn.hl7v2.parser.EncodingNotSupportedException;
+import ca.uhn.hl7v2.parser.GenericParser;
 
 public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 
@@ -45,6 +49,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String idType = "ECID";
 
 		Object object = null;
+		GenericParser parser = new GenericParser();
 
 		try {
 			object = controller.getEncounters(enterpriseId, idType, null, null,
@@ -53,14 +58,27 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 			Assert.fail("Controller should not throw an exception");
 		}
 
-		ORU_R01 r01 = (ORU_R01) object;
+		String r01 = (String) object;
 		assertNotNull(r01);
-		assertTrue(r01 instanceof ORU_R01);
-
-		assertEquals(r01.getMSH().getVersionID().getInternationalizationCode()
+		
+				Message message;
+				try {
+					message = parser.parse(r01);
+				}
+				catch (EncodingNotSupportedException e) {
+					throw new HL7Exception("HL7 encoding not supported", e);
+				}
+				catch (HL7Exception e) {
+					throw new HL7Exception("Error parsing message", e);
+				}
+				
+		assertTrue(message instanceof ORU_R01);
+		ORU_R01 orur01 = (ORU_R01) message;
+		
+		assertEquals(orur01.getMSH().getVersionID().getInternationalizationCode()
 				.getIdentifier().getValue(),
 				RHEAHL7Constants.INTERNATIONALIZATION_CODE);
-		assertEquals(r01.getMSH().getSendingFacility().getNamespaceID()
+		assertEquals(orur01.getMSH().getSendingFacility().getNamespaceID()
 				.getValue(), RHEAHL7Constants.SENDING_FACILITY);
 
 	}
@@ -82,6 +100,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String encounterUniqueId = "f13d6fae-baa9-4553-955d-920098bec08f";
 
 		Object object = null;
+		GenericParser parser = new GenericParser();
 
 		try {
 			object = controller.getEncounters(enterpriseId, idType,
@@ -90,14 +109,27 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 			Assert.fail("Controller should not throw an exception");
 		}
 
-		ORU_R01 r01 = (ORU_R01) object;
+		String r01 = (String) object;
 		assertNotNull(r01);
-		assertTrue(r01 instanceof ORU_R01);
+		
+				Message message;
+				try {
+					message = parser.parse(r01);
+				}
+				catch (EncodingNotSupportedException e) {
+					throw new HL7Exception("HL7 encoding not supported", e);
+				}
+				catch (HL7Exception e) {
+					throw new HL7Exception("Error parsing message", e);
+				}
+				
+		assertTrue(message instanceof ORU_R01);
+		ORU_R01 orur01 = (ORU_R01) message;
 
-		assertEquals(r01.getMSH().getVersionID().getInternationalizationCode()
+		assertEquals(orur01.getMSH().getVersionID().getInternationalizationCode()
 				.getIdentifier().getValue(),
 				RHEAHL7Constants.INTERNATIONALIZATION_CODE);
-		assertEquals(r01.getMSH().getSendingFacility().getNamespaceID()
+		assertEquals(orur01.getMSH().getSendingFacility().getNamespaceID()
 				.getValue(), RHEAHL7Constants.SENDING_FACILITY);
 
 	}
@@ -115,6 +147,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String idType = "ECID";
 
 		Object object = null;
+		GenericParser parser = new GenericParser();
 
 		try {
 			object = controller.getEncounters(enterpriseId, idType, null,
@@ -123,10 +156,24 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 			Assert.fail("Controller should not throw an exception");
 		}
 
-		ORU_R01 r01 = (ORU_R01) object;
+		String r01 = (String) object;
 		assertNotNull(r01);
-		assertTrue(r01 instanceof ORU_R01);
-		assertEquals("1234", r01.getPATIENT_RESULT().getPATIENT().getPID()
+		
+		Message message;
+		try {
+			message = parser.parse(r01);
+		}
+		catch (EncodingNotSupportedException e) {
+			throw new HL7Exception("HL7 encoding not supported", e);
+		}
+		catch (HL7Exception e) {
+			throw new HL7Exception("Error parsing message", e);
+		}
+		
+assertTrue(message instanceof ORU_R01);
+ORU_R01 orur01 = (ORU_R01) message;
+
+		assertEquals("1234", orur01.getPATIENT_RESULT().getPATIENT().getPID()
 				.getPatientIdentifierList(0).getIDNumber().toString());
 
 	}
@@ -291,6 +338,7 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		try {
 			controller.mergePatients(mergeMessage, request, response);
 		} catch (Exception e) {
+			e.printStackTrace();
 			Assert.fail("Controller should not throw an exception");
 		}
 		
