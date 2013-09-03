@@ -106,15 +106,15 @@ public class RHEApatientControllerTest extends BaseModuleContextSensitiveTest {
 		String r01 = (String) object;
 		assertNotNull(r01);
 		
-		Message message;
+		Message message = null;
 		try {
 			message = parser.parse(r01);
 		}
 		catch (EncodingNotSupportedException e) {
-			throw new HL7Exception("HL7 encoding not supported", e);
+			Assert.fail("HL7 encoding not supported");
 		}
 		catch (HL7Exception e) {
-			throw new HL7Exception("Error parsing message", e);
+			Assert.fail("Error parsing message");
 		}
 		
 		assertTrue(message instanceof ORU_R01);
