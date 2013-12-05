@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,7 +62,6 @@ import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonName;
 import org.openmrs.api.APIException;
-import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7InArchive;
 import org.openmrs.hl7.HL7InError;
@@ -656,7 +654,6 @@ public class RHEApatientController {
 		XmlMessageWriter xmlMessagewriter = new XmlMessageWriter();
 
 		Patient patient = null;
-		String source = null;
 		String sourceKey = null;
 		Encounter encounter = null;
 
@@ -760,9 +757,9 @@ public class RHEApatientController {
 			String givenName = null;
 			String familyName = null;
 			String birthDateString = null;
-			int year = 0;
-			int month = 0;
-			int day = 0;
+			Date birthDate = null;
+			String gender = null;
+			
 			String nameSpace = "urn:hl7-org:v2xml";
 
 			Element root = document.getRootElement();
@@ -779,12 +776,12 @@ public class RHEApatientController {
 			for (int i = 0; i < rows.size(); i++) {
 				Element row = (Element) rows.get(i);
 				if (row.getName().equals("PID.5")) {
-					givenName = row
+					familyName = row
 							.getChild("XPN.1",
 									Namespace.getNamespace(nameSpace))
 							.getChild("FN.1", Namespace.getNamespace(nameSpace))
 							.getValue().toString();
-					familyName = row
+					givenName = row
 							.getChild("XPN.2",
 									Namespace.getNamespace(nameSpace))
 							.getValue().toString();
@@ -793,9 +790,19 @@ public class RHEApatientController {
 					birthDateString = row
 							.getChild("TS.1", Namespace.getNamespace(nameSpace))
 							.getValue().toString();
-					year = Integer.parseInt(birthDateString.substring(0, 4));
-					month = Integer.parseInt(birthDateString.substring(4, 6));
-					day = Integer.parseInt(birthDateString.substring(6));
+					
+					
+					SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+					try {
+						if (birthDateString != null)
+							birthDate = format.parse(birthDateString);
+					} catch (ParseException e) {
+						
+					}
+				}
+				if (row.getName().equals("PID.8")) {
+					gender = row.getValue().toString();
+				
 				}
 			}
 
@@ -828,15 +835,12 @@ public class RHEApatientController {
 			identifier.setPreferred(true);
 			patient.addIdentifier(identifier);
 
-			patient.setGender("N/A");
+			if(gender != null)
+				patient.setGender(gender);
+			else
+				patient.setGender("N/A");
 
-			Calendar cal = Calendar.getInstance();
-
-			cal.set(Calendar.MONTH, month);
-			cal.set(Calendar.DATE, day - 1);
-			cal.set(Calendar.YEAR, year);
-
-			patient.setBirthdate(cal.getTime());
+			patient.setBirthdate(birthDate);
 
 			// Save newly created patient into database
 			Context.getPatientService().savePatient(patient);
