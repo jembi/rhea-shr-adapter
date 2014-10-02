@@ -83,6 +83,8 @@ import org.openmrs.module.rheashradapter.util.XmlMessageWriter;
 import org.openmrs.serialization.SerializationException;
 import org.openmrs.web.WebConstants;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 
 import org.springframework.web.bind.annotation.RequestBody;
@@ -106,39 +108,45 @@ public class RHEApatientController {
 
 	@RequestMapping(value = "/identifier", method = RequestMethod.PUT)
 	@ResponseBody
-	public void mergePatients(@RequestBody String mergeMessage,
+	public ResponseEntity<String> mergePatients(@RequestBody String mergeMessage,
 			HttpServletRequest request, HttpServletResponse response) {
 		Map<String, String> postUpdateIdentifiers = null;
 		Map<String, String> preUpdateIdentifiers = null;
 		
 		HttpSession httpSession = request.getSession();
 		if (Context.isAuthenticated()) {
-			
 			NodeList node = identifyMessageType(mergeMessage);			
 			String typeName = node.item(0).getTextContent();
-
 				postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
 				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);	    
-		    
-			if(typeName.equals("LINK")){
+			if(typeName.equals("JOIN")){
 					Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);				
 					response.setStatus((Integer) httpResponse);
 					
 					if(response.equals(HttpServletResponse.SC_OK)){
 						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.merged");	
 						validatePostidentifiers(postUpdateIdentifiers);
+						
+						return new ResponseEntity<String>(HttpStatus.OK);
+					} else{
+						return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
 					}
 
-			}else if(typeName.equals("UNLINK")){
+			}else if(typeName.equals("LEAVE")){
 				Object httpResponse = restorePatient(postUpdateIdentifiers, preUpdateIdentifiers);
 					response.setStatus((Integer) httpResponse);
 					
 					if(response.equals(HttpServletResponse.SC_OK)){
 						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.restored");	
 						validatePostidentifiers(postUpdateIdentifiers);
-					} 
+						
+						return new ResponseEntity<String>(HttpStatus.OK);
+					} else{
+						return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+					}
 			}	
-		}						
+		}
+		return new ResponseEntity<String>(HttpStatus.FORBIDDEN);					
 	}
 
 	private void validatePostidentifiers(Map<String, String> validatePostidentifiers){
@@ -361,7 +369,9 @@ public class RHEApatientController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return doc.getElementsByTagName("source");
+		
+		NodeList nodeList = doc.getElementsByTagName("transition");
+		return nodeList;
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.GET)
