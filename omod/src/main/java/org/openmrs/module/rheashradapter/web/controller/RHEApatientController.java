@@ -40,6 +40,8 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -108,46 +110,48 @@ public class RHEApatientController {
 
 	@RequestMapping(value = "/identifier", method = RequestMethod.PUT)
 	@ResponseBody
-	public ResponseEntity<String> mergePatients(@RequestBody String mergeMessage,
+    public ResponseEntity<String> mergePatients(@RequestBody String mergeMessage,
 			HttpServletRequest request, HttpServletResponse response) {
 		Map<String, String> postUpdateIdentifiers = null;
 		Map<String, String> preUpdateIdentifiers = null;
 		
 		HttpSession httpSession = request.getSession();
 		if (Context.isAuthenticated()) {
-			NodeList node = identifyMessageType(mergeMessage);			
-			String typeName = node.item(0).getTextContent();
-				postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
-				preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);	    
-			if(typeName.equals("JOIN")){
-					Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);				
-					response.setStatus((Integer) httpResponse);
-					
-					if(response.equals(HttpServletResponse.SC_OK)){
-						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.merged");	
-						validatePostidentifiers(postUpdateIdentifiers);
-						
-						return new ResponseEntity<String>(HttpStatus.OK);
-					} else{
-						return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
-					}
+            NodeList node = identifyMessageType(mergeMessage);
+            String typeName = node.item(0).getTextContent();
 
-			}else if(typeName.equals("LEAVE")){
-				Object httpResponse = restorePatient(postUpdateIdentifiers, preUpdateIdentifiers);
-					response.setStatus((Integer) httpResponse);
-					
-					if(response.equals(HttpServletResponse.SC_OK)){
-						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.restored");	
-						validatePostidentifiers(postUpdateIdentifiers);
-						
-						return new ResponseEntity<String>(HttpStatus.OK);
-					} else{
-						return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
-					}
-			}	
-		}
-		return new ResponseEntity<String>(HttpStatus.FORBIDDEN);					
-	}
+            postUpdateIdentifiers = identifyPostUpdateIdentifiers(mergeMessage);
+            preUpdateIdentifiers = identifyPreUpdateIdentifiers(mergeMessage);
+
+            if (typeName.equals("JOIN")) {
+                Object httpResponse = mergePatient(postUpdateIdentifiers, preUpdateIdentifiers);
+                response.setStatus((Integer) httpResponse);
+
+                if (response.equals(HttpServletResponse.SC_OK)) {
+                    httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.merged");
+                    validatePostidentifiers(postUpdateIdentifiers);
+
+                    return new ResponseEntity<String>(HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+                }
+            } else if (typeName.equals("LEAVE")) {
+                Object httpResponse = restorePatient(postUpdateIdentifiers, preUpdateIdentifiers);
+                response.setStatus((Integer) httpResponse);
+
+                if (response.equals(HttpServletResponse.SC_OK)) {
+                    httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Patient.restored");
+                    validatePostidentifiers(postUpdateIdentifiers);
+
+                    return new ResponseEntity<String>(HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+            return new ResponseEntity<String>(HttpStatus.FORBIDDEN);
+        }
 
 	private void validatePostidentifiers(Map<String, String> validatePostidentifiers){
 		
@@ -213,8 +217,10 @@ public class RHEApatientController {
 		try {
 			service.mergePatients(preferred, notPreferred);
 		} catch (APIException e) {
+            log.error(e);
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		} catch (SerializationException e) {
+            log.error(e);
 			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		}
 		}
@@ -369,9 +375,8 @@ public class RHEApatientController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		NodeList nodeList = doc.getElementsByTagName("transition");
-		return nodeList;
+        NodeList nodeList = doc.getElementsByTagName("transition");
+        return nodeList;
 	}
 
 	@RequestMapping(value = "/encounters", method = RequestMethod.GET)
